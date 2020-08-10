@@ -1,30 +1,34 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, OnInit, OnDestroy } from '@angular/core';
+import { fromEvent, Subscription } from 'rxjs';
+import { tap } from 'rxjs/operators';
+import { GlobalEventBusService } from '../core/event-bus';
 
-declare const videojs: any;
 
 @Component({
-  selector: 'app-dashboard',
-  templateUrl: './dashboard.component.html',
-  styleUrls: ['./dashboard.component.scss']
+    selector: 'app-dashboard',
+    templateUrl: './dashboard.component.html',
+    styleUrls: ['./dashboard.component.scss']
 })
-export class DashboardComponent implements OnInit {
+export class DashboardComponent implements OnInit, OnDestroy {
 
-  constructor() { }
+    private sub = new Subscription();
 
-  ngOnInit(): void {
-    const options = {};
+    constructor(
+        private event: GlobalEventBusService
+    ) {
+        window.addEventListener('resize', this.onResize);
+    }
 
-    const player = videojs('my-player', options, function onPlayerReady() {
-      videojs.log('Your player is ready!');
+    ngOnInit(): void {
+    }
 
-      // In this context, `this` is the player that was created by Video.js.
-      this.play();
+    ngOnDestroy() {
+        this.sub.unsubscribe();
+        window.removeEventListener('resize', this.onResize);
+    }
 
-      // How about an event listener?
-      this.on('ended', () => {
-        videojs.log('Awww...over so soon?!');
-      });
-    });
-  }
+    private onResize = (e: Event) => {
+        this.event.onResize(e);
+    }
 
 }

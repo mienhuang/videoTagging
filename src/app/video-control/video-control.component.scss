@@ -1,0 +1,13 @@
+:host {
+    height: 100%;
+    width: 100%;
+    display: flex;
+}
+
+.container {
+    background-color: var(--color-light-gray);
+    flex: 1;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}

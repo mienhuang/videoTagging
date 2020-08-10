@@ -1,10 +1,14 @@
-<video id="my-player" class="video-js" controls preload="auto" poster="https://vjs.zencdn.net/v/oceans.png" data-setup='{}'>
-    <source src="https://vjs.zencdn.net/v/oceans.mp4" type="video/mp4" />
-    <p class="vjs-no-js">
-        To view this video please enable JavaScript, and consider upgrading to a
-        web browser that
-        <a href="https://videojs.com/html5-video-support/" target="_blank">
-            supports HTML5 video
-        </a>
-    </p>
-</video>
+<div class="container">
+    <div class="nav-bar">
+        <app-nav-bar></app-nav-bar>
+    </div>
+    <div class="content">
+        <header>
+            <app-header></app-header>
+        </header>
+        <div class="video-container">
+            <app-video-control></app-video-control>
+        </div>
+    </div>
+
+</div>
