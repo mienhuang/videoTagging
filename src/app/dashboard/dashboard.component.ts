@@ -28,7 +28,11 @@ export class DashboardComponent implements OnInit, OnDestroy {
     }
 
     private onResize = (e: Event) => {
-        this.event.onResize(e);
+        const { innerWidth, innerHeight } = e.currentTarget as any;
+        this.event.onResize({
+            width: innerWidth,
+            height: innerHeight
+        });
     }
 
 }

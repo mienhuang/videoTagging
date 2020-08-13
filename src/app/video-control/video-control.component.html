@@ -1,5 +1,5 @@
 <div #container class="container">
-    <video #player id="my-player" class="video-js" controls preload="auto" poster="https://vjs.zencdn.net/v/oceans.png"
+    <!-- <video #player id="player" class="video-js" controls preload="auto" poster="https://vjs.zencdn.net/v/oceans.png"
         data-setup='{"fluid": true}'>
         <source src="../../assets/test.mp4" type="video/mp4" />
         <p class="vjs-no-js">
@@ -9,5 +9,11 @@
                 supports HTML5 video
             </a>
         </p>
-    </video>
+    </video> -->
+
+    <app-video></app-video>
+
+    <div class="tag-container" [attr.style]="tagStyle">
+
+    </div>
 </div>

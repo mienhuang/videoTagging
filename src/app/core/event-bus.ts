@@ -8,7 +8,7 @@ export class GlobalEventBusService {
 
     resize$ = this.resize.asObservable();
 
-    onResize(event: Event) {
-        this.resize.next(event);
+    onResize(size: { width: number, height: number }) {
+        this.resize.next(size);
     }
 }

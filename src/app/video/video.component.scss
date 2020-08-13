@@ -1,0 +1,54 @@
+:host {
+    display: flex;
+    height: 100%;
+    width: 100%;
+}
+
+.container {
+    flex: 1;
+    width: 100%;
+
+    .video-container {
+        position: relative;
+        margin: 0;
+        padding: 0;
+
+        .big-play {
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            margin: auto;
+            height: 40px;
+            width: 40px;
+            cursor: pointer;
+
+            svg {
+                height: 40px;
+                width: 40px;
+                fill: var(--color-blue);
+            }
+        }
+    }
+
+    .control {
+        height: 34px;
+        background-color: var(--color-blue);
+        display: flex;
+        align-items: center;
+        padding: 2px 4px;
+
+        .control-btn {
+            height: 16px;
+            width: 16px;
+            margin-left: 10px;
+        }
+
+        svg {
+            height: 16px;
+            width: 16px;
+            fill: var(--color-white);
+        }
+    }
+}

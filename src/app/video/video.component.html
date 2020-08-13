@@ -1,0 +1,25 @@
+<div #container id="container" class="container">
+    <figure class="video-container">
+        <video #video id="video" [width]="width">
+            <source src="../../assets/test.mp4" type="video/mp4">
+            <p>Your browser doesn't support HTML5 video</p>
+        </video>
+        <div *ngIf="!isStartedPlay" class="big-play" (click)="startPlay()">
+            <svg>
+                <use xlink:href="#play"></use>
+            </svg>
+        </div>
+    </figure>
+    <div class="control">
+        <div *ngIf="!isPlaying" class="control-btn" (click)="startPlay()">
+            <svg>
+                <use xlink:href="#play"></use>
+            </svg>
+        </div>
+        <div *ngIf="isPlaying" class="control-btn" (click)="pasue()">
+            <svg>
+                <use xlink:href="#pause"></use>
+            </svg>
+        </div>
+    </div>
+</div>
