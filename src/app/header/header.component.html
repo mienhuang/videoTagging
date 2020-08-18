@@ -1,3 +1,15 @@
 <div class="container">
+    <div class="cell">
+        <label>
+            Simple Rate:
+            <input type="number" min="0" max="100">
+        </label>
+    </div>
 
+    <div class="cell">
+        <button mat-raised-button color="primary">Step Length: 2</button>
+    </div>
+    <div class="cell">
+        <mat-slide-toggle>{{isEditingMode? 'Editing Mode': 'View Mode'}}</mat-slide-toggle>
+    </div>
 </div>

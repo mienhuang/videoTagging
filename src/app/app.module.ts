@@ -14,6 +14,7 @@ import { BrowserAnimationsModule } from '@angular/platform-browser/animations';
 import { MatSliderModule } from '@angular/material/slider';
 import { MatButtonModule } from '@angular/material/button';
 import { MatIconModule } from '@angular/material/icon';
+import { MatSlideToggleModule } from '@angular/material/slide-toggle';
 
 @NgModule({
     declarations: [
@@ -31,6 +32,7 @@ import { MatIconModule } from '@angular/material/icon';
         MatSliderModule,
         MatIconModule,
         MatButtonModule,
+        MatSlideToggleModule
     ],
     providers: [
     ],

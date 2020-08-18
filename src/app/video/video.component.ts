@@ -1,4 +1,4 @@
-import { Component, OnInit, ViewChild, ElementRef, OnDestroy, Output, EventEmitter } from '@angular/core';
+import { Component, OnInit, ViewChild, ElementRef, OnDestroy, Output, EventEmitter, Input, OnChanges, SimpleChanges } from '@angular/core';
 import { GlobalEventBusService } from '../core/event-bus';
 import { tap } from 'rxjs/operators';
 import { Subscription } from 'rxjs';
@@ -8,7 +8,7 @@ import { Subscription } from 'rxjs';
     templateUrl: './video.component.html',
     styleUrls: ['./video.component.scss']
 })
-export class VideoComponent implements OnInit, OnDestroy {
+export class VideoComponent implements OnInit, OnDestroy, OnChanges {
 
     progressMaxValue = 10000;
 
@@ -19,6 +19,7 @@ export class VideoComponent implements OnInit, OnDestroy {
 
     @ViewChild('container') container: ElementRef;
     @Output() currentTimeChange = new EventEmitter();
+    @Input() simpleRate = 50;
 
     isStartedPlay = false;
     isPlaying = false;
@@ -31,6 +32,7 @@ export class VideoComponent implements OnInit, OnDestroy {
     progressValue = 0;
 
     private sub = new Subscription();
+    private step = 0.02;
 
     volumeFormatLabel = (value: number) => `${value}%`;
     progressFormatLabel = (value: number) => `00:00`;
@@ -56,7 +58,7 @@ export class VideoComponent implements OnInit, OnDestroy {
 
         this.video.addEventListener('canplay', this.readyToPlay);
         this.video.addEventListener('loadeddata', this.addPoster);
-        this.video.addEventListener('loadeddata', this.ended);
+        this.video.addEventListener('ended', this.ended);
         this.video.addEventListener('seeking', this.onSeeking);
         this.video.addEventListener('durationchange ', this.onDurationChange);
         this.video.addEventListener('seeked', this.afterSeeked);
@@ -130,7 +132,10 @@ export class VideoComponent implements OnInit, OnDestroy {
         this.isMuted = false;
     }
 
-    ended = () => {
+    ended = (event) => {
+        console.log(event, 'ended');
+        this.isPlaying = false;
+
         this.stopPlay();
     }
 
@@ -153,12 +158,17 @@ export class VideoComponent implements OnInit, OnDestroy {
         this.video.setAttribute('poster', src);
     }
 
+    ngOnChanges(changes: SimpleChanges) {
+        if (changes.simpleRate && this.simpleRate > 0) {
+            this.step = 1 / this.simpleRate;
+        }
+    }
 
     ngOnDestroy() {
         this.sub.unsubscribe();
         this.video.removeEventListener('canplay', this.readyToPlay);
         this.video.removeEventListener('loadeddata', this.addPoster);
-        this.video.removeEventListener('loadeddata', this.ended);
+        this.video.removeEventListener('ended', this.ended);
         this.video.removeEventListener('seeking', this.onSeeking);
         this.video.removeEventListener('durationchange ', this.onDurationChange);
         this.video.removeEventListener('seeked', this.afterSeeked);
