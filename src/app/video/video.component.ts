@@ -1,4 +1,4 @@
-import { Component, OnInit, ViewChild, ElementRef, OnDestroy } from '@angular/core';
+import { Component, OnInit, ViewChild, ElementRef, OnDestroy, Output, EventEmitter } from '@angular/core';
 import { GlobalEventBusService } from '../core/event-bus';
 import { tap } from 'rxjs/operators';
 import { Subscription } from 'rxjs';
@@ -10,17 +10,31 @@ import { Subscription } from 'rxjs';
 })
 export class VideoComponent implements OnInit, OnDestroy {
 
+    progressMaxValue = 10000;
+
     video: HTMLVideoElement;
     scale = 1;
     height = 0;
     width = 0;
 
     @ViewChild('container') container: ElementRef;
+    @Output() currentTimeChange = new EventEmitter();
 
     isStartedPlay = false;
     isPlaying = false;
+    isMuted = false;
+    currentTimeId: NodeJS.Timeout;
+    duration = 1;
+    currentTime = 0;
+    seekTime = 0;
+
+    progressValue = 0;
 
     private sub = new Subscription();
+
+    volumeFormatLabel = (value: number) => `${value}%`;
+    progressFormatLabel = (value: number) => `00:00`;
+
 
     constructor(private event: GlobalEventBusService) {
 
@@ -39,13 +53,17 @@ export class VideoComponent implements OnInit, OnDestroy {
         this.getContainerSize();
 
         this.video = document.getElementById('video') as HTMLVideoElement;
+
+        this.video.addEventListener('canplay', this.readyToPlay);
         this.video.addEventListener('loadeddata', this.addPoster);
+        this.video.addEventListener('loadeddata', this.ended);
+        this.video.addEventListener('seeking', this.onSeeking);
+        this.video.addEventListener('durationchange ', this.onDurationChange);
+        this.video.addEventListener('seeked', this.afterSeeked);
     }
 
     getContainerSize = () => {
-        console.log(this, 'ssssssssss')
         const ele = document.getElementById('container');
-
 
         this.height = ele.offsetHeight;
         this.width = ele.offsetWidth;
@@ -63,6 +81,7 @@ export class VideoComponent implements OnInit, OnDestroy {
         if (!this.video) return;
         this.isPlaying = true;
         this.video.play();
+        this.onPlaying();
     }
 
     pasue() {
@@ -70,6 +89,56 @@ export class VideoComponent implements OnInit, OnDestroy {
 
         this.isPlaying = false;
         this.video.pause();
+        this.stopPlay();
+    }
+
+    volumeChange({ value }) {
+        this.video.volume = value / 100;
+
+        if (value === 0) {
+            this.isMuted = true;
+            this.video.muted = true;
+        }
+
+        if (this.isMuted && value !== 0) {
+            this.isMuted = false;
+            this.video.muted = false;
+        }
+    }
+
+    progressChange(event) {
+        const percentage = event.value / this.progressMaxValue;
+        this.seekTime = this.duration * percentage;
+
+        console.log(this.seekTime, 'seekTime');
+
+        // this.pasue();
+        this.video.currentTime = this.seekTime;
+    }
+
+    mute() {
+        if (!this.video) return;
+
+        this.video.muted = true;
+        this.isMuted = true;
+    }
+
+    unmute() {
+        if (!this.video) return;
+
+        this.video.muted = false;
+        this.isMuted = false;
+    }
+
+    ended = () => {
+        this.stopPlay();
+    }
+
+    readyToPlay = () => {
+        this.video.muted = true;
+        this.video.volume = 0;
+        this.isMuted = true;
+        this.duration = this.video.duration;
     }
 
     addPoster = () => {
@@ -84,8 +153,42 @@ export class VideoComponent implements OnInit, OnDestroy {
         this.video.setAttribute('poster', src);
     }
 
+
     ngOnDestroy() {
         this.sub.unsubscribe();
+        this.video.removeEventListener('canplay', this.readyToPlay);
+        this.video.removeEventListener('loadeddata', this.addPoster);
+        this.video.removeEventListener('loadeddata', this.ended);
+        this.video.removeEventListener('seeking', this.onSeeking);
+        this.video.removeEventListener('durationchange ', this.onDurationChange);
+        this.video.removeEventListener('seeked', this.afterSeeked);
+    }
+
+    private onSeeking(event) {
+        console.log(event, 'seeee');
+        // TOTO show loading when seeking
+    }
+
+    private afterSeeked(event) {
+        console.log('afterSeeked', event);
+        this.currentTime = this.seekTime;
+    }
+
+    private onPlaying() {
+        this.currentTimeId = setInterval(() => {
+            this.currentTime = this.video.currentTime;
+            this.progressValue = (this.currentTime / this.duration) * this.progressMaxValue;
+            this.currentTimeChange.emit(this.video.currentTime);
+        }, 50);
+    }
+
+    private stopPlay() {
+        clearInterval(this.currentTimeId);
+    }
+
+    private onDurationChange(event) {
+        console.log(event, 'duration change');
+        // this.duration = event;
     }
 
 }

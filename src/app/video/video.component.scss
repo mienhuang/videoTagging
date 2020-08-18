@@ -12,6 +12,7 @@
         position: relative;
         margin: 0;
         padding: 0;
+        margin-bottom: -6px;
 
         .big-play {
             position: absolute;
@@ -37,18 +38,45 @@
         background-color: var(--color-blue);
         display: flex;
         align-items: center;
-        padding: 2px 4px;
+        padding: 2px 14px;
+        display: flex;
+
+        .progress-bar {
+            flex: 1;
+            overflow: hidden;
+            padding: 0 4px;
+
+            .bar {
+                width: 100%;
+            }
+        }
 
         .control-btn {
             height: 16px;
             width: 16px;
-            margin-left: 10px;
         }
 
         svg {
             height: 16px;
             width: 16px;
             fill: var(--color-white);
+        }
+
+        .volume-control {
+            width: 0;
+            transition: all 0.5s;
+            opacity: 0;
+        }
+
+        .volume-container {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .volume-container:hover > .volume-control {
+            width: 120px;
+            opacity: 1;
         }
     }
 }
