@@ -1,14 +1,18 @@
 <div #container id="container" class="container">
     <div class="video-container">
-        <video #video id="video" [width]="width">
-            <source src="../../assets/test.mp4" type="video/mp4">
-            <p>Your browser doesn't support HTML5 video</p>
-        </video>
+        <div class="video-inner" #videoContainer>
+            <video #video id="video" [width]="width">
+                <source src="../../assets/test.mp4" type="video/mp4">
+                <p>Your browser doesn't support HTML5 video</p>
+            </video>
+            <div id="editorDiv"></div>
+        </div>
         <div *ngIf="!isStartedPlay" class="big-play" (click)="startPlay()">
             <svg>
                 <use xlink:href="#play"></use>
             </svg>
         </div>
+
     </div>
     <div class="control">
         <div class="control-btn">
@@ -20,7 +24,8 @@
             </svg>
         </div>
         <div class="progress-bar">
-            <mat-slider class="bar" (change)="progressChange($event)" [value]="progressValue" tickInterval="1000" min="0" [max]="progressMaxValue">
+            <mat-slider class="bar" (change)="progressChange($event)" [value]="progressValue" tickInterval="1000"
+                min="0" [max]="progressMaxValue">
             </mat-slider>
         </div>
 

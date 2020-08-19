@@ -31,3 +31,12 @@ input[type="number"] {
         margin: 0;
     }
 }
+
+
+.CanvasToolsEditor {
+    padding: 0 !important;
+
+    canvas {
+        background-color: transparent !important;
+    }
+}

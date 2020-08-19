@@ -1,14 +1,48 @@
-import { Component, OnInit, ViewChild, ElementRef, OnDestroy, Output, EventEmitter, Input, OnChanges, SimpleChanges } from '@angular/core';
+import {
+    Component,
+    OnInit,
+    ViewChild,
+    ElementRef,
+    OnDestroy,
+    Output,
+    EventEmitter,
+    Input,
+    OnChanges,
+    SimpleChanges,
+    AfterViewInit,
+    ChangeDetectorRef
+} from '@angular/core';
 import { GlobalEventBusService } from '../core/event-bus';
 import { tap } from 'rxjs/operators';
 import { Subscription } from 'rxjs';
+
+import { RegionData } from 'vott-ct/lib/js/CanvasTools/Core/RegionData';
+
+import CanvasHelpers from './canvasHelpers';
+// import { AssetPreview, ContentSource } from '../../common/assetPreview/assetPreview';
+// import { Editor } from 'vott-ct/lib/js/CanvasTools/CanvasTools.Editor';
+// import Clipboard from '../../../../common/clipboard';
+// import Confirm from '../../common/confirm/confirm';
+// import { strings } from '../../../../common/strings';
+// import { SelectionMode } from 'vott-ct/lib/js/CanvasTools/Interface/ISelectorSettings';
+// import { Rect } from 'vott-ct/lib/js/CanvasTools/Core/Rect';
+
+declare const CanvasTools: any;
+// declare enum SelectionMode {
+//     NONE = 0,
+//     POINT = 1,
+//     RECT = 2,
+//     COPYRECT = 3,
+//     POLYLINE = 4,
+//     POLYGON = 5
+// }
 
 @Component({
     selector: 'app-video',
     templateUrl: './video.component.html',
     styleUrls: ['./video.component.scss']
 })
-export class VideoComponent implements OnInit, OnDestroy, OnChanges {
+export class VideoComponent implements OnInit, OnDestroy, OnChanges, AfterViewInit {
 
     progressMaxValue = 10000;
 
@@ -18,6 +52,7 @@ export class VideoComponent implements OnInit, OnDestroy, OnChanges {
     width = 0;
 
     @ViewChild('container') container: ElementRef;
+    @ViewChild('videoContainer') videoContainer: ElementRef;
     @Output() currentTimeChange = new EventEmitter();
     @Input() simpleRate = 50;
 
@@ -29,7 +64,11 @@ export class VideoComponent implements OnInit, OnDestroy, OnChanges {
     currentTime = 0;
     seekTime = 0;
 
+    editor: any;
     progressValue = 0;
+
+    videoHeight = 0;
+    videoWidth = 0;
 
     private sub = new Subscription();
     private step = 0.02;
@@ -38,7 +77,7 @@ export class VideoComponent implements OnInit, OnDestroy, OnChanges {
     progressFormatLabel = (value: number) => `00:00`;
 
 
-    constructor(private event: GlobalEventBusService) {
+    constructor(private event: GlobalEventBusService, private cdr: ChangeDetectorRef) {
 
         const resizeSub = this.event.resize$
             .pipe(
@@ -62,6 +101,23 @@ export class VideoComponent implements OnInit, OnDestroy, OnChanges {
         this.video.addEventListener('seeking', this.onSeeking);
         this.video.addEventListener('durationchange ', this.onDurationChange);
         this.video.addEventListener('seeked', this.afterSeeked);
+
+
+
+    }
+
+    ngAfterViewInit() {
+
+        const videoC = this.videoContainer.nativeElement;
+
+        this.videoHeight = videoC.clientHeight;
+        this.videoWidth = videoC.clientWidth;
+
+        this.cdr.markForCheck();
+
+        this.addCTEditor();
+
+        // editor.addToolbar(toolbarContainer, CanvasTools.Editor.FullToolbarSet, '../../assets/icons');
     }
 
     getContainerSize = () => {
@@ -112,8 +168,7 @@ export class VideoComponent implements OnInit, OnDestroy, OnChanges {
         const percentage = event.value / this.progressMaxValue;
         this.seekTime = this.duration * percentage;
 
-        console.log(this.seekTime, 'seekTime');
-
+        this.seekTime = Math.ceil(this.seekTime / this.step) * this.step;
         // this.pasue();
         this.video.currentTime = this.seekTime;
     }
@@ -144,6 +199,8 @@ export class VideoComponent implements OnInit, OnDestroy, OnChanges {
         this.video.volume = 0;
         this.isMuted = true;
         this.duration = this.video.duration;
+
+        console.log(this, 'sssssssssssss111111111');
     }
 
     addPoster = () => {
@@ -152,10 +209,10 @@ export class VideoComponent implements OnInit, OnDestroy, OnChanges {
         canvas.height = this.video.videoHeight * this.scale;
         canvas.getContext('2d').drawImage(this.video, 0, 0, canvas.width, canvas.height);
 
-        // const img = document.createElement("img");
+        // const img = document.createElement('img');
         const src = canvas.toDataURL('image/jpeg', 1.0);
         // output.appendChild(img);
-        this.video.setAttribute('poster', src);
+        // this.video.setAttribute('poster', src);
     }
 
     ngOnChanges(changes: SimpleChanges) {
@@ -201,4 +258,149 @@ export class VideoComponent implements OnInit, OnDestroy, OnChanges {
         // this.duration = event;
     }
 
+    private addCTEditor() {
+
+        const editorContainer = document.getElementById('editorDiv');
+        const toolbarContainer = document.getElementById('toolbarDiv');
+
+        this.editor = new CanvasTools.Editor(editorContainer).api;
+        this.editor.autoResize = false;
+        this.editor.onSelectionEnd = this.onSelectionEnd;
+        // this.editor.onRegionMoveEnd = this.onRegionMoveEnd;
+        // this.editor.onRegionDelete = this.onRegionDelete;
+        // this.editor.onRegionSelected = this.onRegionSelected;
+        // this.editor.AS.setSelectionMode({ mode: SelectionMode });
+    }
+
+    private onSelectionEnd = (regionData: RegionData) => {
+        console.log(regionData);
+        //console.log('STEP-INFO, start create a new region');
+        if (CanvasHelpers.isEmpty(regionData)) {
+            return;
+        }
+        // const { height, width, x, y, points } = this.editor.scaleRegionToSourceSize(
+        //     regionData,
+        //     this.state.currentAsset.asset.size.width,
+        //     this.state.currentAsset.asset.size.height,
+        // );
+
+        // if (!(height * width)) {
+        //     // INFO: avoid add a dot to the page as a region
+        //     return;
+        // }
+
+        // const id = shortid.generate();
+
+        // this.editor.RM.addRegion(id, regionData, null);
+
+        // this.template = new Rect(regionData.width, regionData.height);
+
+        // // RegionData not serializable so need to extract data
+        // // ADD REGION
+        // const lockedTags = this.props.lockedTags;
+        // //console.log(this.props.customData, 'ccccccc datat')
+        // const newRegion = {
+        //     id,
+        //     type: this.editorModeToType(this.props.editorMode),
+        //     tags: lockedTags || [],
+        //     boundingBox: {
+        //         height,
+        //         width,
+        //         left: x,
+        //         top: y,
+        //     },
+        //     points,
+        //     trackId: this.props.customData.maxTrackId + 1,
+        //     faceId: '-1',
+        //     keyFrame: true,
+        //     frameIndex: this.props.frameIndex,
+        //     imgPath: ''
+        // };
+
+        // // this.props.customDataActions.updateRegion(newRegion);
+
+
+        // //console.log(newRegion, 'newRegionnewRegionnewRegion')
+        // if (lockedTags && lockedTags.length) {
+        //     this.editor.RM.updateTagsById(id, CanvasHelpers.getTagsDescriptor(this.props.project.tags, newRegion, newRegion.trackId));
+        // }
+        // // this.updateAssetRegions([...this.state.currentAsset.regions, newRegion]);
+        // this.props.updateMaxTrackId(newRegion, 'add');
+        // if (this.props.onSelectedRegionsChanged) {
+        //     this.props.onSelectedRegionsChanged([newRegion]);
+        // }
+    }
+
+    // private onRegionMoveEnd = (id: string, regionData: RegionData) => {
+    //     // const currentRegions = this.state.currentAsset.regions;
+    //     const currentRegions = this.props.frames[this.props.frameIndex] || [];
+    //     const movedRegionIndex = currentRegions.findIndex((region) => region.id === id);
+    //     const movedRegion = currentRegions[movedRegionIndex];
+    //     const scaledRegionData = this.editor.scaleRegionToSourceSize(
+    //         regionData,
+    //         this.state.currentAsset.asset.size.width,
+    //         this.state.currentAsset.asset.size.height,
+    //     );
+
+    //     if (movedRegion) {
+    //         movedRegion.points = scaledRegionData.points;
+    //         movedRegion.boundingBox = {
+    //             height: scaledRegionData.height,
+    //             width: scaledRegionData.width,
+    //             left: scaledRegionData.x,
+    //             top: scaledRegionData.y,
+    //         };
+    //         movedRegion.keyFrame = true;
+    //     }
+
+    //     currentRegions[movedRegionIndex] = movedRegion;
+    //     this.props.updateMaxTrackId(movedRegion, 'delete');
+    //     this.props.updateMaxTrackId(movedRegion, 'add');
+    //     // this.updateAssetRegions(currentRegions);
+    //     this.props.onRegionMoved(movedRegion, movedRegion.trackId);
+    // }
+
+
+    // private onRegionDelete = (id: string) => {
+    //     // Remove from Canvas Tools
+    //     this.editor.RM.deleteRegionById(id);
+
+    //     // Remove from project
+    //     // const currentRegions = this.state.currentAsset.regions;
+    //     const currentRegions = this.props.frames[this.props.frameIndex] || [];
+    //     const copy = [...currentRegions];
+    //     const deletedRegionIndex = currentRegions.findIndex((region) => region.id === id);
+    //     //console.log(copy[deletedRegionIndex], '1111111');
+    //     this.props.updateMaxTrackId(copy[deletedRegionIndex], 'delete');
+    //     currentRegions.splice(deletedRegionIndex, 1);
+    //     // this.updateAssetRegions(currentRegions);
+
+    //     if (this.props.onSelectedRegionsChanged) {
+    //         // TODO: some unknown reason make selected region not display region manage menu
+    //         const latest = [...currentRegions].pop();
+    //         this.props.onSelectedRegionsChanged(latest ? [latest] : []);
+    //     }
+    // }
+
+    // private onRegionSelected = (id: string, multiSelect: boolean) => {
+    //     const selectedRegions = this.getSelectedRegions();
+    //     console.log(id, 'select region', selectedRegions)
+    //     if (this.props.onSelectedRegionsChanged) {
+    //         this.props.onSelectedRegionsChanged(selectedRegions);
+    //     }
+    //     // Gets the scaled region data
+    //     const selectedRegionsData = this.editor.RM.getSelectedRegionsBounds().find((region) => region.id === id);
+
+    //     //console.log(selectedRegionsData, 'select region 1')
+    //     if (selectedRegionsData) {
+    //         this.template = new Rect(selectedRegionsData.width, selectedRegionsData.height);
+    //     }
+
+    //     if (this.props.lockedTags && this.props.lockedTags.length) {
+    //         for (const selectedRegion of selectedRegions) {
+    //             selectedRegion.tags = CanvasHelpers.addAllIfMissing(selectedRegion.tags, this.props.lockedTags);
+    //         }
+    //         this.updateRegions(selectedRegions);
+    //     }
+    // }
 }

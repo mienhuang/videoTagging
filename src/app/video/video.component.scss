@@ -14,6 +14,21 @@
         padding: 0;
         margin-bottom: -6px;
 
+        .video-inner {
+            position: relative;
+
+            #editorDiv {
+                position: absolute;
+                top: 0;
+                left: 0;
+                right: 0;
+                bottom: 0;
+                margin: auto;
+                height: 100% !important;
+                width: 100% !important;
+            }
+        }
+
         .big-play {
             position: absolute;
             top: 0;
