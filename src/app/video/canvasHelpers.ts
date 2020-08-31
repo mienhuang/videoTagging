@@ -9,6 +9,7 @@ import {
     IPoint
 } from '../core/models/canvas.model';
 
+
 /**
  * Static functions to assist in operations within Canvas component
  */
@@ -140,12 +141,24 @@ export default class CanvasHelpers {
 
         const tags = region.tags
             .map((tagName) => {
-                const projectTag = projectTags.find((projectTag) => projectTag.name === tagName);
-                return projectTag ? new Tag(trackId + '', projectTag.color) : null;
+                const tag = projectTags.find((item) => item.name === tagName);
+                return tag ? new Tag(trackId + '', tag.color) : null;
             })
             .filter((tag) => tag !== null);
 
         return new TagsDescriptor(tags);
+    }
+
+    public static getDefaultDescriptor() {
+        return new TagsDescriptor([]);
+    }
+
+    public static scaleRegionToSourceSize(regionData, sourceWidth, sourceHeight, frameWidth, frameHeight) {
+        const xf = sourceWidth / frameWidth;
+        const yf = sourceHeight / frameHeight;
+        const rd = regionData.copy();
+        rd.scale(xf, yf);
+        return rd;
     }
 
     /**

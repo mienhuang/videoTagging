@@ -12,30 +12,29 @@ import {
     AfterViewInit,
     ChangeDetectorRef
 } from '@angular/core';
+
+import shortid from 'shortid';
+
 import { GlobalEventBusService } from '../core/event-bus';
 import { tap } from 'rxjs/operators';
 import { Subscription } from 'rxjs';
-
+import { CanvasTools } from 'vott-ct';
 import { RegionData } from 'vott-ct/lib/js/CanvasTools/Core/RegionData';
 
+import { EditorMode, RegionType, ITag } from '../core/models/canvas.model';
+
 import CanvasHelpers from './canvasHelpers';
-// import { AssetPreview, ContentSource } from '../../common/assetPreview/assetPreview';
-// import { Editor } from 'vott-ct/lib/js/CanvasTools/CanvasTools.Editor';
+
+import { Editor } from 'vott-ct/lib/js/CanvasTools/CanvasTools.Editor';
 // import Clipboard from '../../../../common/clipboard';
 // import Confirm from '../../common/confirm/confirm';
 // import { strings } from '../../../../common/strings';
 // import { SelectionMode } from 'vott-ct/lib/js/CanvasTools/Interface/ISelectorSettings';
-// import { Rect } from 'vott-ct/lib/js/CanvasTools/Core/Rect';
+import { Rect } from 'vott-ct/lib/js/CanvasTools/Core/Rect';
 
-declare const CanvasTools: any;
-// declare enum SelectionMode {
-//     NONE = 0,
-//     POINT = 1,
-//     RECT = 2,
-//     COPYRECT = 3,
-//     POLYLINE = 4,
-//     POLYGON = 5
-// }
+import { IRegion } from '../core/models/canvas.model';
+import { ICustomData } from '../core/models/region.model';
+
 
 @Component({
     selector: 'app-video',
@@ -64,14 +63,28 @@ export class VideoComponent implements OnInit, OnDestroy, OnChanges, AfterViewIn
     currentTime = 0;
     seekTime = 0;
 
-    editor: any;
+    editor: Editor;
     progressValue = 0;
 
     videoHeight = 0;
     videoWidth = 0;
+    frameHeight = 0;
+    frameWidth = 0;
+    tags: ITag[] = [{ name: 'test1', color: '#ff22ff' }];
 
     private sub = new Subscription();
     private step = 0.02;
+    private _customData = {
+        maxTrackId: 0,
+        regions: [],
+        maxTrackIdList: [0],
+        currentTrackId: []
+    };
+    private _frames = {};
+    private frameIndex = 0;
+    private selectedRegions: IRegion[];
+    private template: Rect;
+    private lockedTags: string[] = [];
 
     volumeFormatLabel = (value: number) => `${value}%`;
     progressFormatLabel = (value: number) => `00:00`;
@@ -101,20 +114,9 @@ export class VideoComponent implements OnInit, OnDestroy, OnChanges, AfterViewIn
         this.video.addEventListener('seeking', this.onSeeking);
         this.video.addEventListener('durationchange ', this.onDurationChange);
         this.video.addEventListener('seeked', this.afterSeeked);
-
-
-
     }
 
     ngAfterViewInit() {
-
-        const videoC = this.videoContainer.nativeElement;
-
-        this.videoHeight = videoC.clientHeight;
-        this.videoWidth = videoC.clientWidth;
-
-        this.cdr.markForCheck();
-
         this.addCTEditor();
 
         // editor.addToolbar(toolbarContainer, CanvasTools.Editor.FullToolbarSet, '../../assets/icons');
@@ -200,6 +202,11 @@ export class VideoComponent implements OnInit, OnDestroy, OnChanges, AfterViewIn
         this.isMuted = true;
         this.duration = this.video.duration;
 
+        this.videoHeight = this.video.videoHeight;
+        this.videoWidth = this.video.videoWidth;
+        this.frameHeight = this.video.clientHeight;
+        this.frameWidth = this.video.clientWidth;
+
         console.log(this, 'sssssssssssss111111111');
     }
 
@@ -260,147 +267,294 @@ export class VideoComponent implements OnInit, OnDestroy, OnChanges, AfterViewIn
 
     private addCTEditor() {
 
-        const editorContainer = document.getElementById('editorDiv');
+        const editorContainer = document.getElementById('editorDiv') as HTMLDivElement;
         const toolbarContainer = document.getElementById('toolbarDiv');
 
         this.editor = new CanvasTools.Editor(editorContainer).api;
         this.editor.autoResize = false;
         this.editor.onSelectionEnd = this.onSelectionEnd;
-        // this.editor.onRegionMoveEnd = this.onRegionMoveEnd;
-        // this.editor.onRegionDelete = this.onRegionDelete;
-        // this.editor.onRegionSelected = this.onRegionSelected;
+        this.editor.onRegionMoveEnd = this.onRegionMoveEnd;
+        this.editor.onRegionDelete = this.onRegionDelete;
+        this.editor.onRegionSelected = this.onRegionSelected;
         // this.editor.AS.setSelectionMode({ mode: SelectionMode });
     }
 
+
     private onSelectionEnd = (regionData: RegionData) => {
-        console.log(regionData);
-        //console.log('STEP-INFO, start create a new region');
         if (CanvasHelpers.isEmpty(regionData)) {
             return;
         }
-        // const { height, width, x, y, points } = this.editor.scaleRegionToSourceSize(
-        //     regionData,
-        //     this.state.currentAsset.asset.size.width,
-        //     this.state.currentAsset.asset.size.height,
-        // );
 
-        // if (!(height * width)) {
-        //     // INFO: avoid add a dot to the page as a region
-        //     return;
-        // }
+        const { height, width, x, y, points } = CanvasHelpers.scaleRegionToSourceSize(
+            regionData,
+            this.videoWidth,
+            this.videoHeight,
+            this.frameWidth,
+            this.frameHeight
+        );
 
-        // const id = shortid.generate();
+        console.log({ height, width, x, y, points });
 
-        // this.editor.RM.addRegion(id, regionData, null);
+        if (!(height * width)) {
+            // INFO: avoid add a dot to the page as a region
+            return;
+        }
 
-        // this.template = new Rect(regionData.width, regionData.height);
+        const id: string = shortid.generate();
 
-        // // RegionData not serializable so need to extract data
-        // // ADD REGION
-        // const lockedTags = this.props.lockedTags;
-        // //console.log(this.props.customData, 'ccccccc datat')
-        // const newRegion = {
-        //     id,
-        //     type: this.editorModeToType(this.props.editorMode),
-        //     tags: lockedTags || [],
-        //     boundingBox: {
-        //         height,
-        //         width,
-        //         left: x,
-        //         top: y,
-        //     },
-        //     points,
-        //     trackId: this.props.customData.maxTrackId + 1,
-        //     faceId: '-1',
-        //     keyFrame: true,
-        //     frameIndex: this.props.frameIndex,
-        //     imgPath: ''
-        // };
+        const defaultDescription = CanvasHelpers.getDefaultDescriptor();
 
-        // // this.props.customDataActions.updateRegion(newRegion);
+        this.editor.RM.addRegion(id, regionData, defaultDescription);
 
 
-        // //console.log(newRegion, 'newRegionnewRegionnewRegion')
-        // if (lockedTags && lockedTags.length) {
-        //     this.editor.RM.updateTagsById(id, CanvasHelpers.getTagsDescriptor(this.props.project.tags, newRegion, newRegion.trackId));
-        // }
-        // // this.updateAssetRegions([...this.state.currentAsset.regions, newRegion]);
-        // this.props.updateMaxTrackId(newRegion, 'add');
-        // if (this.props.onSelectedRegionsChanged) {
-        //     this.props.onSelectedRegionsChanged([newRegion]);
-        // }
+        const newRegion: IRegion = {
+            id,
+            type: this.editorModeToType(EditorMode.Rectangle),
+            tags: ['test1'],
+            boundingBox: {
+                height,
+                width,
+                left: x,
+                top: y,
+            },
+            points,
+            trackId: 1,
+            faceId: '-1',
+            keyFrame: true,
+            frameIndex: 0,
+            imgPath: ''
+        };
+
+        const description = CanvasHelpers.getTagsDescriptor(this.tags, newRegion, newRegion.trackId);
+
+        this.editor.RM.updateTagsById(id, description);
+
+        this.updateMaxTrackId(newRegion, 'add');
+
+        this.onSelectedRegionsChanged([newRegion]);
     }
 
-    // private onRegionMoveEnd = (id: string, regionData: RegionData) => {
-    //     // const currentRegions = this.state.currentAsset.regions;
-    //     const currentRegions = this.props.frames[this.props.frameIndex] || [];
-    //     const movedRegionIndex = currentRegions.findIndex((region) => region.id === id);
-    //     const movedRegion = currentRegions[movedRegionIndex];
-    //     const scaledRegionData = this.editor.scaleRegionToSourceSize(
-    //         regionData,
-    //         this.state.currentAsset.asset.size.width,
-    //         this.state.currentAsset.asset.size.height,
-    //     );
+    private onRegionMoveEnd = (id: string, regionData: RegionData) => {
+        // const currentRegions = this.state.currentAsset.regions;
+        const currentRegions = this._frames[this.frameIndex] || [];
+        const movedRegionIndex = currentRegions.findIndex((region) => region.id === id);
+        const movedRegion = currentRegions[movedRegionIndex];
 
-    //     if (movedRegion) {
-    //         movedRegion.points = scaledRegionData.points;
-    //         movedRegion.boundingBox = {
-    //             height: scaledRegionData.height,
-    //             width: scaledRegionData.width,
-    //             left: scaledRegionData.x,
-    //             top: scaledRegionData.y,
-    //         };
-    //         movedRegion.keyFrame = true;
-    //     }
-
-    //     currentRegions[movedRegionIndex] = movedRegion;
-    //     this.props.updateMaxTrackId(movedRegion, 'delete');
-    //     this.props.updateMaxTrackId(movedRegion, 'add');
-    //     // this.updateAssetRegions(currentRegions);
-    //     this.props.onRegionMoved(movedRegion, movedRegion.trackId);
-    // }
+        const { height, width, x, y, points } = CanvasHelpers.scaleRegionToSourceSize(
+            regionData,
+            this.videoWidth,
+            this.videoHeight,
+            this.frameWidth,
+            this.frameHeight
+        );
 
 
-    // private onRegionDelete = (id: string) => {
-    //     // Remove from Canvas Tools
-    //     this.editor.RM.deleteRegionById(id);
+        if (movedRegion) {
+            movedRegion.points = points;
+            movedRegion.boundingBox = {
+                height,
+                width,
+                left: x,
+                top: y,
+            };
+            movedRegion.keyFrame = true;
+        }
 
-    //     // Remove from project
-    //     // const currentRegions = this.state.currentAsset.regions;
-    //     const currentRegions = this.props.frames[this.props.frameIndex] || [];
-    //     const copy = [...currentRegions];
-    //     const deletedRegionIndex = currentRegions.findIndex((region) => region.id === id);
-    //     //console.log(copy[deletedRegionIndex], '1111111');
-    //     this.props.updateMaxTrackId(copy[deletedRegionIndex], 'delete');
-    //     currentRegions.splice(deletedRegionIndex, 1);
-    //     // this.updateAssetRegions(currentRegions);
+        currentRegions[movedRegionIndex] = movedRegion;
+        this.updateMaxTrackId(movedRegion, 'delete');
+        this.updateMaxTrackId(movedRegion, 'add');
+        // this.updateAssetRegions(currentRegions);
+        // this.props.onRegionMoved(movedRegion, movedRegion.trackId);
+    }
 
-    //     if (this.props.onSelectedRegionsChanged) {
-    //         // TODO: some unknown reason make selected region not display region manage menu
-    //         const latest = [...currentRegions].pop();
-    //         this.props.onSelectedRegionsChanged(latest ? [latest] : []);
-    //     }
-    // }
 
-    // private onRegionSelected = (id: string, multiSelect: boolean) => {
-    //     const selectedRegions = this.getSelectedRegions();
-    //     console.log(id, 'select region', selectedRegions)
-    //     if (this.props.onSelectedRegionsChanged) {
-    //         this.props.onSelectedRegionsChanged(selectedRegions);
-    //     }
-    //     // Gets the scaled region data
-    //     const selectedRegionsData = this.editor.RM.getSelectedRegionsBounds().find((region) => region.id === id);
+    private onRegionDelete = (id: string) => {
+        // Remove from Canvas Tools
+        this.editor.RM.deleteRegionById(id);
 
-    //     //console.log(selectedRegionsData, 'select region 1')
-    //     if (selectedRegionsData) {
-    //         this.template = new Rect(selectedRegionsData.width, selectedRegionsData.height);
-    //     }
+        // Remove from project
+        // const currentRegions = this.state.currentAsset.regions;
+        const currentRegions = this._frames[this.frameIndex] || [];
+        const copy = [...currentRegions];
+        const deletedRegionIndex = currentRegions.findIndex((region) => region.id === id);
 
-    //     if (this.props.lockedTags && this.props.lockedTags.length) {
-    //         for (const selectedRegion of selectedRegions) {
-    //             selectedRegion.tags = CanvasHelpers.addAllIfMissing(selectedRegion.tags, this.props.lockedTags);
-    //         }
-    //         this.updateRegions(selectedRegions);
-    //     }
-    // }
+        this.updateMaxTrackId(copy[deletedRegionIndex], 'delete');
+        currentRegions.splice(deletedRegionIndex, 1);
+
+        const latest = [...currentRegions].pop();
+        this.onSelectedRegionsChanged(latest ? [latest] : []);
+    }
+
+    private onRegionSelected = (id: string, multiSelect: boolean) => {
+        const selectedRegions = this.getSelectedRegions();
+        console.log(id, 'select region', selectedRegions);
+        this.onSelectedRegionsChanged(selectedRegions);
+        // Gets the scaled region data
+        const selectedRegionsData = this.editor.RM.getSelectedRegionsBounds().find((region) => region.id === id);
+
+        // console.log(selectedRegionsData, 'select region 1')
+        if (selectedRegionsData) {
+            this.template = new Rect(selectedRegionsData.width, selectedRegionsData.height);
+        }
+
+        for (const selectedRegion of selectedRegions) {
+            selectedRegion.tags = CanvasHelpers.addAllIfMissing(selectedRegion.tags, this.lockedTags);
+        }
+        this.updateRegions(selectedRegions);
+    }
+
+    private editorModeToType = (editorMode: EditorMode) => {
+        let type;
+        switch (editorMode) {
+            case EditorMode.CopyRect:
+            case EditorMode.Rectangle:
+                type = RegionType.Rectangle;
+                break;
+            case EditorMode.Polygon:
+                type = RegionType.Polygon;
+                break;
+            case EditorMode.Point:
+                type = RegionType.Point;
+                break;
+            case EditorMode.Polyline:
+                type = RegionType.Polyline;
+                break;
+            default:
+                break;
+        }
+        return type;
+    }
+
+    private updateMaxTrackId = async (region: IRegion, type: string) => {
+        // console.log(region, 'update max track id', this.state.selectedAsset);
+        if (type === 'add') {
+            // region.frameIndex = region.frameIndex ? region.frameIndex : this.getFrameIndex();
+            this._customDataIncrease({ trackId: region.trackId, id: region.id, region: { ...region } });
+            this.addRegionToFrames(region);
+        } else {
+            this._customDataDecrease({ trackId: region.trackId, id: region.id, region: { ...region } });
+            this.removeRegionFromFrames(region);
+        }
+        // this.canvas.current.refreshCanvasToolsRegions();
+    }
+
+    private _customDataDecrease(newData) {
+        const newState = this._customData as ICustomData;
+        const currentMaxTrackIdList = newState.maxTrackIdList;
+        const payload = newData;
+        const deRegions = [...(newState.regions[payload.trackId] || [])];
+        const deIndex = deRegions.findIndex((region) => {
+            return region.id === payload.id;
+        });
+        const newDeRegions = { ...newState.regions };
+        if (deIndex !== -1) {
+            deRegions.splice(deIndex, 1);
+        }
+        newDeRegions[payload.trackId] = [...deRegions];
+        if (deRegions.length === 0) {
+            const listIndex = [...currentMaxTrackIdList].findIndex((id: number) => id === payload.trackId);
+            if (listIndex !== -1) {
+                currentMaxTrackIdList.splice(listIndex, 1);
+            }
+        }
+        this._customData = {
+            regions: { ...newDeRegions },
+            maxTrackId: [...currentMaxTrackIdList].pop(),
+            maxTrackIdList: [...currentMaxTrackIdList],
+            currentTrackId: newState.currentTrackId
+        };
+    }
+
+    private _customDataIncrease(newData) {
+        // console.log('called');
+        const newState = this._customData as ICustomData;
+        const currentMaxTrackIdList = newState.maxTrackIdList;
+        const payload = newData;
+        const inRegions = newState.regions[payload.trackId] || [];
+        const inIndex = inRegions.findIndex((region) => {
+            return region.id === payload.id;
+        });
+        const newInRegions = { ...newState.regions };
+        if (inIndex !== -1) {
+            inRegions.splice(inIndex, 1);
+        }
+        newInRegions[payload.trackId] = [...inRegions, payload.region];
+        const removeSame = new Set([...currentMaxTrackIdList, Number(payload.trackId)]);
+        const newList = [...removeSame].sort((a, b) => {
+            if (a < b) {
+                return -1;
+            }
+            if (a > b) {
+                return 1;
+            }
+            return 0;
+        });
+        this._customData = {
+            regions: { ...newInRegions },
+            maxTrackId: [...newList].pop(),
+            maxTrackIdList: newList,
+            currentTrackId: newState.currentTrackId
+        };
+    }
+
+
+    private removeRegionFromFrames(region: IRegion) {
+        const frameIndex = region.frameIndex;
+        if (frameIndex === -1) return;
+        const regions = this._frames[frameIndex + ''] as IRegion[] || [];
+        const removeSame = regions.filter(r => r.id !== region.id);
+        this._frames[frameIndex + ''] = [...removeSame];
+        // this.props.frameDataActions.updateFrames(this._frames);
+    }
+
+    private addRegionToFrames(region: IRegion) {
+        const frameIndex = region.frameIndex;
+        if (frameIndex === -1) return;
+        const regions = this._frames[frameIndex + ''] as IRegion[];
+        const removeSame = regions ? regions.filter(r => r.id !== region.id) : [];
+        this._frames[frameIndex + ''] = [...removeSame, region];
+        // console.log('callllll')
+        // this.props.frameDataActions.updateFrames(this._frames);
+    }
+
+    private onSelectedRegionsChanged = (selectedRegions: IRegion[]) => {
+        // INFO: create a new region also will trigger here.
+        // console.log(selectedRegions, 'selected regions');
+        const ids = selectedRegions.map(region => ({ trackId: region.trackId, id: region.id }));
+        this._customData.currentTrackId = [...ids];
+        // this.props.customDataActions.updateCurrentTrackId([...ids]);
+        this.selectedRegions = selectedRegions;
+    }
+
+    private getSelectedRegions = (): IRegion[] => {
+        const selectedRegions = this.editor.RM.getSelectedRegionsBounds().map((rb) => rb.id);
+        const currentRegions = this._frames[this.frameIndex] || [];
+        // return this.state.currentAsset.regions.filter((r) => selectedRegions.find((id) => r.id === id));
+        return currentRegions.filter((r) => selectedRegions.find((id) => r.id === id));
+    }
+
+    private updateRegions = (updates: IRegion[]) => {
+        // INFO: update Regions
+        // console.log('called update regions...', updates);
+        // const currentRegions = this.props.frames[this.props.frameIndex];
+        // const updatedRegions = CanvasHelpers.updateRegions(currentRegions, updates);
+        for (const update of updates) {
+            this.editor.RM.updateTagsById(update.id, CanvasHelpers.getTagsDescriptor(this.tags, update, update.trackId));
+            this.updateMaxTrackId(update, 'delete');
+            this.updateMaxTrackId(update, 'add');
+        }
+
+        this.updateCanvasToolsRegionTags();
+    }
+
+    private updateCanvasToolsRegionTags = (): void => {
+        const currentRegions = this._frames[this.frameIndex] || [];
+        for (const region of currentRegions) {
+            this.editor.RM.updateTagsById(
+                region.id,
+                CanvasHelpers.getTagsDescriptor(this.tags, region, region.trackId),
+            );
+        }
+    }
+
 }

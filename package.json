@@ -23,11 +23,12 @@
     "@angular/platform-browser": "~9.0.6",
     "@angular/platform-browser-dynamic": "~9.0.6",
     "@angular/router": "~9.0.6",
+    "@types/snapsvg": "^0.5.0",
     "rxjs": "~6.5.4",
     "shortid": "^2.2.15",
     "tslib": "^1.10.0",
     "video.js": "^7.7.5",
-    "vott-ct": "^2.2.15",
+    "vott-ct": "file:src/assets/lib/vott-ct-2.2.16.tgz",
     "zone.js": "~0.10.2"
   },
   "devDependencies": {
