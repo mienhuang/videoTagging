@@ -1,0 +1,39 @@
+footer {
+    height: 26px;
+    padding: 0 10px;
+    color: var(--color-white);
+    background-color: var(--color-blue);
+
+    display: flex;
+
+    justify-content: flex-end;
+    align-items: center;
+
+    .left {
+        flex: 1;
+        display: flex;
+        justify-content: flex-start;
+        align-items: center;
+        .text {
+            margin-right: 20px;
+        }
+    }
+
+    .right {
+        flex: 1;
+        display: flex;
+        justify-content: flex-end;
+        align-items: center;
+        .text {
+            margin-left: 20px;
+        }
+    }
+
+    .text {
+        font-size: 12px;
+
+        .value {
+            font-size-adjust: 14px;
+        }
+    }
+}

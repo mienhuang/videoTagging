@@ -1,20 +1,32 @@
-const { app, BrowserWindow } = require('electron');
+const { app, BrowserWindow, ipcMain, Menu } = require('electron');
+
+const fileService = require('./file');
 
 function createWindow() {
     // 创建浏览器窗口
     const win = new BrowserWindow({
         width: 800,
         height: 600,
+        minHeight: 760,
+        minWidth: 1360,
+        // resizable: false,
         webPreferences: {
-            nodeIntegration: true
+            nodeIntegration: true,
+            webSecurity: false
         }
     })
 
     // 并且为你的应用加载index.html
     win.loadURL('http://localhost:4200')
+    win.maximize();
 
     // 打开开发者工具
-    win.webContents.openDevTools()
+    win.webContents.openDevTools();
+
+    fileService.attch();
+
+    const menu = Menu.buildFromTemplate([]);
+    Menu.setApplicationMenu(menu);
 }
 
 // This method will be called when Electron has finished

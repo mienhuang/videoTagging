@@ -1,3 +1,48 @@
 .container {
-    
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+
+    svg {
+        height: 26px;
+        width: 26px;
+        fill: var(--color-gray-c);
+
+        &:hover {
+            fill: var(--color-white);
+        }
+    }
+
+    .export {
+        svg {
+            height: 30px;
+            width: 30px;
+        }
+    }
+    .menu {
+        flex: 1;
+
+        .import {
+            height: 0;
+            width: 0;
+            visibility: hidden;
+            background-color: transparent;
+        }
+        .cell {
+            cursor: pointer;
+            height: 60px;
+            width: 60px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+    }
+
+    .settings {
+        cursor: pointer;
+        height: 40px;
+        width: 60px;
+        text-align: center;
+        padding-top: 10px;
+    }
 }

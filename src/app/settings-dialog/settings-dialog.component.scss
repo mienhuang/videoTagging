@@ -1,0 +1,76 @@
+.cell {
+    display: flex;
+    margin-bottom: 20px;
+    align-items: center;
+
+    label {
+        width: 100px;
+    }
+}
+
+.system-settings {
+    padding: 20px;
+    .cell {
+        .update {
+            border-radius: 0;
+            border-top-right-radius: 2px;
+            border-bottom-right-radius: 2px;
+        }
+
+        .warn {
+            margin-left: 10px;
+            color: var(--color-warn);
+            line-height: 38px;
+        }
+
+        .labels {
+            display: flex;
+
+            .label {
+                margin-left: 10px;
+                position: relative;
+
+                button {
+                    cursor: default;
+                }
+
+                .close {
+                    cursor: pointer;
+                    position: absolute;
+                    height: 16px;
+                    width: 16px;
+                    top: -8px;
+                    right: -8px;
+                    background-color: var(--color-warn);
+                    border-radius: 8px;
+                    font-size: 20px;
+                    z-index: 2;
+                    text-align: center;
+                    line-height: 16px;
+                    transform: rotate(45deg);
+                }
+            }
+        }
+    }
+
+    input {
+        width: 120px;
+    }
+}
+
+.server-settings {
+    padding: 20px;
+
+    input {
+        width: 400px;
+    }
+}
+
+input {
+    height: 32px;
+    border: 1px solid #999;
+    padding: 2px;
+    border-top-left-radius: 2px;
+    border-bottom-left-radius: 2px;
+    margin-left: 10px;
+}

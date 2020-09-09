@@ -1,15 +1,52 @@
 <div class="container">
     <div class="cell">
         <label>
-            Simple Rate:
-            <input type="number" min="0" max="100">
+            Track ID:
+            <input type="number" [value]="eventBus.currentTrackId$ | async" (change)="trackIdChange($event)">
         </label>
+    </div>
+    <div class="cell">
+        <button mat-stroked-button color="primary" title="First Key Frame" (click)="changeFrame('first')">
+            <svg>
+                <use xlink:href="#double-left-arrow"></use>
+            </svg>
+        </button>
     </div>
 
     <div class="cell">
-        <button mat-raised-button color="primary">Step Length: 2</button>
+        <button mat-stroked-button color="primary" title="Previous Key Frame" (click)="changeFrame('previous')">
+            <svg>
+                <use xlink:href="#single-left-arrow"></use>
+            </svg>
+        </button>
+    </div>
+
+    <div class="cell">
+        <button mat-stroked-button color="primary" title="Next Key Frame" (click)="changeFrame('next')">
+            <svg class="right">
+                <use xlink:href="#single-left-arrow"></use>
+            </svg>
+        </button>
+    </div>
+
+    <div class="cell">
+        <button mat-stroked-button color="primary" title="Last Key Frame" (click)="changeFrame('last')">
+            <svg class="right">
+                <use xlink:href="#double-left-arrow"></use>
+            </svg>
+        </button>
+    </div>
+
+    <div class="cell">
+        <button (click)="toggleTag('face')" mat-raised-button color="primary">face</button>
     </div>
     <div class="cell">
-        <mat-slide-toggle>{{isEditingMode? 'Editing Mode': 'View Mode'}}</mat-slide-toggle>
+        <label>
+            Search:
+            <input type="number" [value]="eventBus.currentTrackId$ | async" (change)="trackIdChange($event)">
+        </label>
+    </div>
+    <div class="cell">
+        <button mat-raised-button color="warn" (click)="deleteAll()">Delete All</button>
     </div>
 </div>

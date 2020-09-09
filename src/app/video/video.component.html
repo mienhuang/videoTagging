@@ -1,13 +1,11 @@
 <div #container id="container" class="container">
     <div class="video-container">
         <div class="video-inner" #videoContainer>
-            <video #video id="video" [width]="width">
-                <source src="../../assets/test.mp4" type="video/mp4">
-                <p>Your browser doesn't support HTML5 video</p>
+            <video #video id="video" [width]="width" [src]="filePath">
             </video>
             <div id="editorDiv"></div>
         </div>
-        <div *ngIf="!isStartedPlay" class="big-play" (click)="startPlay()">
+        <div *ngIf="false" class="big-play" (click)="startPlay()">
             <svg>
                 <use xlink:href="#play"></use>
             </svg>

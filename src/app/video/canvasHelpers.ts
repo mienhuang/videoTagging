@@ -161,6 +161,14 @@ export default class CanvasHelpers {
         return rd;
     }
 
+    public static scaleRegionToFrameSize(regionData, sourceWidth, sourceHeight, frameWidth, frameHeight) {
+        const xf = frameWidth / sourceWidth;
+        const yf = frameHeight / sourceHeight;
+        const rd = regionData.copy();
+        rd.scale(xf, yf);
+        return rd;
+    }
+
     /**
      * Gets RegionDataType (CanvasTools) from RegionType
      */

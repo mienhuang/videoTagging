@@ -12,11 +12,13 @@ import {
     AfterViewInit,
     ChangeDetectorRef
 } from '@angular/core';
+import { SafeUrl, DomSanitizer } from '@angular/platform-browser';
 
 import shortid from 'shortid';
 
 import { GlobalEventBusService } from '../core/event-bus';
-import { tap } from 'rxjs/operators';
+import { KeyboardEventService } from '../core/keyboard-event';
+import { tap, filter, delay, switchMap, switchMapTo } from 'rxjs/operators';
 import { Subscription } from 'rxjs';
 import { CanvasTools } from 'vott-ct';
 import { RegionData } from 'vott-ct/lib/js/CanvasTools/Core/RegionData';
@@ -34,6 +36,7 @@ import { Rect } from 'vott-ct/lib/js/CanvasTools/Core/Rect';
 
 import { IRegion } from '../core/models/canvas.model';
 import { ICustomData } from '../core/models/region.model';
+import { MatSnackBar } from '@angular/material/snack-bar';
 
 
 @Component({
@@ -70,7 +73,12 @@ export class VideoComponent implements OnInit, OnDestroy, OnChanges, AfterViewIn
     videoWidth = 0;
     frameHeight = 0;
     frameWidth = 0;
-    tags: ITag[] = [{ name: 'test1', color: '#ff22ff' }];
+    tags: ITag[] = [{ name: 'face', color: '#ff22ff' }];
+    filePath: SafeUrl = '';
+    normalFilePath = {
+        fileName: '',
+        filePath: ''
+    };
 
     private sub = new Subscription();
     private step = 0.02;
@@ -85,27 +93,173 @@ export class VideoComponent implements OnInit, OnDestroy, OnChanges, AfterViewIn
     private selectedRegions: IRegion[];
     private template: Rect;
     private lockedTags: string[] = [];
+    private videoStartTime = 0;
+    private isSaveingData = false;
 
     volumeFormatLabel = (value: number) => `${value}%`;
     progressFormatLabel = (value: number) => `00:00`;
 
 
-    constructor(private event: GlobalEventBusService, private cdr: ChangeDetectorRef) {
+    constructor(
+        private event: GlobalEventBusService,
+        private keyboardEvent: KeyboardEventService,
+        private cdr: ChangeDetectorRef,
+        private domSanitizer: DomSanitizer,
+        private _snackBar: MatSnackBar
+    ) {
 
         const resizeSub = this.event.resize$
             .pipe(
                 tap(({ width, height }) => {
-                    this.width = width - 60;
+                    this.width = width - 360;
+                })
+            )
+            .subscribe();
+        const videoSelectSub = this.event.videoSelected$
+            .pipe(
+                tap(() => {
+                    this.message('open video successed, syncing data...');
+                    this.event.showLoading();
+                }),
+                tap(({ name, src }) => {
+                    console.log({ name, src }, src.split(name));
+                    this.normalFilePath = {
+                        fileName: name,
+                        filePath: src.split(name)[0]
+                    };
+                    this.filePath = this.domSanitizer.bypassSecurityTrustUrl(src);
+                    localStorage.setItem('filePath', src.split(name)[0]);
+                    localStorage.setItem('fileName', name);
+                }),
+                switchMap(() => {
+                    return this.event.readFileOrCreate(localStorage.getItem('filePath'), localStorage.getItem('fileName'))
+                        .pipe(
+                            tap((data) => {
+                                console.log(data, 'readFileOrCreate');
+                                const { customData, frameData } = JSON.parse(data);
+                                console.log({ customData, frameData }, 'readFileOrCreate');
+                                this._customData = customData;
+                                this._frames = frameData;
+                            })
+                        );
+                }),
+                tap(() => {
+                    this.event.hideLoading();
                 })
             )
             .subscribe();
 
+        const tagChangeSub = this.event.tagChange$
+            .pipe(
+                tap((type: string) => {
+                    this.applyTag(type);
+                })
+            )
+            .subscribe();
+        const newTrackIdSub = this.event.newTrackIdSeted$
+            .pipe(
+                tap((id: number) => {
+                    this.updateTrackId(id);
+                })
+            )
+            .subscribe();
+
+
+        const spanceSub = this.keyboardEvent.spaceTabed$
+            .pipe(
+                tap(() => { this.togglePlay(); })
+            )
+            .subscribe();
+
+
+        const arrowLeftSub = this.keyboardEvent.arrowLeft$
+            .pipe(
+                tap(() => {
+                    this.moveToPreviousFrame();
+                })
+            )
+            .subscribe();
+        const arrowRightSub = this.keyboardEvent.arrowRight$
+            .pipe(
+                tap(() => {
+                    this.moveToNextFrame();
+                })
+            )
+            .subscribe();
+        const saveDataSub = this.keyboardEvent.saveData$
+            .pipe(
+                filter(() => !this.isSaveingData),
+                tap(() => {
+                    this.event.showLoading();
+                    this.message('saving data...');
+                }),
+                switchMap(() => {
+                    return this.event.saveFile({
+                        path: this.normalFilePath,
+                        contents: JSON.stringify({
+                            customData: this._customData,
+                            frameData: this._frames
+                        })
+                    });
+                }),
+                tap(() => {
+                    this.event.hideLoading();
+                })
+            )
+            .subscribe();
+
+        const frameChangeSub = this.event.frameChange$
+            .pipe(
+                tap((type) => {
+                    this.moveToFrame(type);
+                })
+            )
+            .subscribe();
+
+
         this.sub.add(resizeSub);
+        this.sub.add(videoSelectSub);
+        this.sub.add(tagChangeSub);
+        this.sub.add(spanceSub);
+        this.sub.add(arrowLeftSub);
+        this.sub.add(arrowRightSub);
+        this.sub.add(newTrackIdSub);
+        this.sub.add(saveDataSub);
+        this.sub.add(frameChangeSub);
     }
 
     ngOnInit(): void {
         this.getContainerSize();
+        const fileName = localStorage.getItem('fileName');
+        const filePath = localStorage.getItem('filePath');
+        this.normalFilePath = {
+            fileName,
+            filePath
+        };
 
+        this.event.showLoading();
+        this.message('syncing data...');
+        const readFileSub = this.event.readFileOrCreate(filePath, fileName)
+            .pipe(
+                tap((data) => {
+                    console.log(data, 'readFileOrCreate');
+                    const { customData, frameData } = JSON.parse(data);
+                    console.log({ customData, frameData }, 'readFileOrCreate');
+                    this._customData = customData;
+                    this._frames = frameData;
+                }),
+                tap(() => {
+                    this.event.hideLoading();
+                })
+            )
+            .subscribe();
+
+        this.sub.add(readFileSub);
+        this.filePath = this.domSanitizer.bypassSecurityTrustUrl(`${localStorage.getItem('filePath')}${localStorage.getItem('fileName')}`);
+        this.initVideo();
+    }
+
+    initVideo() {
         this.video = document.getElementById('video') as HTMLVideoElement;
 
         this.video.addEventListener('canplay', this.readyToPlay);
@@ -118,7 +272,6 @@ export class VideoComponent implements OnInit, OnDestroy, OnChanges, AfterViewIn
 
     ngAfterViewInit() {
         this.addCTEditor();
-
         // editor.addToolbar(toolbarContainer, CanvasTools.Editor.FullToolbarSet, '../../assets/icons');
     }
 
@@ -137,8 +290,19 @@ export class VideoComponent implements OnInit, OnDestroy, OnChanges, AfterViewIn
         this.play();
     }
 
+    togglePlay() {
+        if (this.isPlaying) {
+            this.pasue();
+
+            return;
+        }
+
+        this.play();
+    }
+
     play() {
         if (!this.video) return;
+        this.isStartedPlay = true;
         this.isPlaying = true;
         this.video.play();
         this.onPlaying();
@@ -168,10 +332,30 @@ export class VideoComponent implements OnInit, OnDestroy, OnChanges, AfterViewIn
 
     progressChange(event) {
         const percentage = event.value / this.progressMaxValue;
-        this.seekTime = this.duration * percentage;
 
-        this.seekTime = Math.ceil(this.seekTime / this.step) * this.step;
-        // this.pasue();
+        const target = Math.ceil((this.duration * percentage) / this.step) * this.step;
+        this.seekTo(target);
+    }
+
+    moveToNextFrame() {
+        const target = Number(((Math.ceil(this.currentTime / this.step) + 1) * this.step).toFixed(6));
+        if (target > this.duration) {
+            return;
+        }
+        this.seekTo(target);
+    }
+
+    moveToPreviousFrame() {
+        const target = Number(((Math.floor(this.currentTime / this.step) - 1) * this.step).toFixed(6));
+        if (target < 0) {
+            return;
+        }
+        this.seekTo(target);
+    }
+
+    seekTo(time: number) {
+        this.seekTime = time;
+        this.pasue();
         this.video.currentTime = this.seekTime;
     }
 
@@ -197,6 +381,8 @@ export class VideoComponent implements OnInit, OnDestroy, OnChanges, AfterViewIn
     }
 
     readyToPlay = () => {
+        console.log('can play', this)
+
         this.video.muted = true;
         this.video.volume = 0;
         this.isMuted = true;
@@ -206,8 +392,6 @@ export class VideoComponent implements OnInit, OnDestroy, OnChanges, AfterViewIn
         this.videoWidth = this.video.videoWidth;
         this.frameHeight = this.video.clientHeight;
         this.frameWidth = this.video.clientWidth;
-
-        console.log(this, 'sssssssssssss111111111');
     }
 
     addPoster = () => {
@@ -238,29 +422,51 @@ export class VideoComponent implements OnInit, OnDestroy, OnChanges, AfterViewIn
         this.video.removeEventListener('seeked', this.afterSeeked);
     }
 
-    private onSeeking(event) {
+    private message(message: string) {
+        this._snackBar.open(message, 'Notice', {
+            duration: 3000,
+        });
+    }
+
+    private onSeeking = (event) => {
         console.log(event, 'seeee');
         // TOTO show loading when seeking
     }
 
-    private afterSeeked(event) {
-        console.log('afterSeeked', event);
+    private afterSeeked = (event) => {
+        // this.play();
+        console.log('seeked...')
         this.currentTime = this.seekTime;
+        this.checkFrameIndex();
     }
 
     private onPlaying() {
         this.currentTimeId = setInterval(() => {
             this.currentTime = this.video.currentTime;
             this.progressValue = (this.currentTime / this.duration) * this.progressMaxValue;
+            this.checkFrameIndex();
             this.currentTimeChange.emit(this.video.currentTime);
         }, 50);
+    }
+
+    private checkFrameIndex() {
+        const target = Math.ceil((this.currentTime - this.videoStartTime) / this.step) + 1;
+        console.log(this.currentTime, target, this.frameIndex, 'this.frameIndex')
+        if (target !== this.frameIndex) {
+            this.updateFrameIndex(target);
+        }
+    }
+
+    private updateFrameIndex(index: number) {
+        this.frameIndex = index;
+        this.refreshCanvasToolsRegions();
     }
 
     private stopPlay() {
         clearInterval(this.currentTimeId);
     }
 
-    private onDurationChange(event) {
+    private onDurationChange = (event) => {
         console.log(event, 'duration change');
         // this.duration = event;
     }
@@ -310,7 +516,7 @@ export class VideoComponent implements OnInit, OnDestroy, OnChanges, AfterViewIn
         const newRegion: IRegion = {
             id,
             type: this.editorModeToType(EditorMode.Rectangle),
-            tags: ['test1'],
+            tags: [],
             boundingBox: {
                 height,
                 width,
@@ -318,27 +524,36 @@ export class VideoComponent implements OnInit, OnDestroy, OnChanges, AfterViewIn
                 top: y,
             },
             points,
-            trackId: 1,
+            trackId: this._customData.maxTrackId + 1,
             faceId: '-1',
             keyFrame: true,
-            frameIndex: 0,
+            frameIndex: this.frameIndex,
             imgPath: ''
         };
 
-        const description = CanvasHelpers.getTagsDescriptor(this.tags, newRegion, newRegion.trackId);
-
-        this.editor.RM.updateTagsById(id, description);
+        this.updateRegion(newRegion);
 
         this.updateMaxTrackId(newRegion, 'add');
 
         this.onSelectedRegionsChanged([newRegion]);
+
+        this.editor.RM.selectRegionById(id);
+
+        console.log(this._customData, 'cccccccccccccc')
+    }
+
+    private updateRegion(region: IRegion) {
+        const description = CanvasHelpers.getTagsDescriptor(this.tags, region, region.trackId);
+
+        this.editor.RM.updateTagsById(region.id, description);
     }
 
     private onRegionMoveEnd = (id: string, regionData: RegionData) => {
+        console.log('callde onRegionMoveEnd')
         // const currentRegions = this.state.currentAsset.regions;
         const currentRegions = this._frames[this.frameIndex] || [];
         const movedRegionIndex = currentRegions.findIndex((region) => region.id === id);
-        const movedRegion = currentRegions[movedRegionIndex];
+        const movedRegion: IRegion = currentRegions[movedRegionIndex];
 
         const { height, width, x, y, points } = CanvasHelpers.scaleRegionToSourceSize(
             regionData,
@@ -361,14 +576,18 @@ export class VideoComponent implements OnInit, OnDestroy, OnChanges, AfterViewIn
         }
 
         currentRegions[movedRegionIndex] = movedRegion;
+        this.onSelectedRegionsChanged([movedRegion]);
         this.updateMaxTrackId(movedRegion, 'delete');
         this.updateMaxTrackId(movedRegion, 'add');
         // this.updateAssetRegions(currentRegions);
         // this.props.onRegionMoved(movedRegion, movedRegion.trackId);
+        this.updateRegion(movedRegion);
+        this.updateRegionsBetweenKeyFrames(movedRegion, movedRegion.trackId);
     }
 
 
     private onRegionDelete = (id: string) => {
+        console.log('callde onRegionDelete')
         // Remove from Canvas Tools
         this.editor.RM.deleteRegionById(id);
 
@@ -386,21 +605,15 @@ export class VideoComponent implements OnInit, OnDestroy, OnChanges, AfterViewIn
     }
 
     private onRegionSelected = (id: string, multiSelect: boolean) => {
+
+        console.log(id, 'id in onRegionSelected');
+
+        if (!id) return;
+
         const selectedRegions = this.getSelectedRegions();
         console.log(id, 'select region', selectedRegions);
+
         this.onSelectedRegionsChanged(selectedRegions);
-        // Gets the scaled region data
-        const selectedRegionsData = this.editor.RM.getSelectedRegionsBounds().find((region) => region.id === id);
-
-        // console.log(selectedRegionsData, 'select region 1')
-        if (selectedRegionsData) {
-            this.template = new Rect(selectedRegionsData.width, selectedRegionsData.height);
-        }
-
-        for (const selectedRegion of selectedRegions) {
-            selectedRegion.tags = CanvasHelpers.addAllIfMissing(selectedRegion.tags, this.lockedTags);
-        }
-        this.updateRegions(selectedRegions);
     }
 
     private editorModeToType = (editorMode: EditorMode) => {
@@ -426,7 +639,7 @@ export class VideoComponent implements OnInit, OnDestroy, OnChanges, AfterViewIn
     }
 
     private updateMaxTrackId = async (region: IRegion, type: string) => {
-        // console.log(region, 'update max track id', this.state.selectedAsset);
+        console.log(region, 'update max track id', type);
         if (type === 'add') {
             // region.frameIndex = region.frameIndex ? region.frameIndex : this.getFrameIndex();
             this._customDataIncrease({ trackId: region.trackId, id: region.id, region: { ...region } });
@@ -435,7 +648,7 @@ export class VideoComponent implements OnInit, OnDestroy, OnChanges, AfterViewIn
             this._customDataDecrease({ trackId: region.trackId, id: region.id, region: { ...region } });
             this.removeRegionFromFrames(region);
         }
-        // this.canvas.current.refreshCanvasToolsRegions();
+        // this.refreshCanvasToolsRegions();
     }
 
     private _customDataDecrease(newData) {
@@ -463,6 +676,7 @@ export class VideoComponent implements OnInit, OnDestroy, OnChanges, AfterViewIn
             maxTrackIdList: [...currentMaxTrackIdList],
             currentTrackId: newState.currentTrackId
         };
+        console.log(this._customData, '_customDataDecrease')
     }
 
     private _customDataIncrease(newData) {
@@ -495,6 +709,8 @@ export class VideoComponent implements OnInit, OnDestroy, OnChanges, AfterViewIn
             maxTrackIdList: newList,
             currentTrackId: newState.currentTrackId
         };
+
+        console.log(this._customData, '_customDataIncrease')
     }
 
 
@@ -524,10 +740,15 @@ export class VideoComponent implements OnInit, OnDestroy, OnChanges, AfterViewIn
         this._customData.currentTrackId = [...ids];
         // this.props.customDataActions.updateCurrentTrackId([...ids]);
         this.selectedRegions = selectedRegions;
+
+        if (!selectedRegions[0]) return;
+
+        this.event.setCurrentTrackId(selectedRegions[0].trackId);
     }
 
     private getSelectedRegions = (): IRegion[] => {
         const selectedRegions = this.editor.RM.getSelectedRegionsBounds().map((rb) => rb.id);
+        console.log(selectedRegions, 'selectedRegions');
         const currentRegions = this._frames[this.frameIndex] || [];
         // return this.state.currentAsset.regions.filter((r) => selectedRegions.find((id) => r.id === id));
         return currentRegions.filter((r) => selectedRegions.find((id) => r.id === id));
@@ -540,8 +761,8 @@ export class VideoComponent implements OnInit, OnDestroy, OnChanges, AfterViewIn
         // const updatedRegions = CanvasHelpers.updateRegions(currentRegions, updates);
         for (const update of updates) {
             this.editor.RM.updateTagsById(update.id, CanvasHelpers.getTagsDescriptor(this.tags, update, update.trackId));
-            this.updateMaxTrackId(update, 'delete');
-            this.updateMaxTrackId(update, 'add');
+            // this.updateMaxTrackId(update, 'delete');
+            // this.updateMaxTrackId(update, 'add');
         }
 
         this.updateCanvasToolsRegionTags();
@@ -557,4 +778,289 @@ export class VideoComponent implements OnInit, OnDestroy, OnChanges, AfterViewIn
         }
     }
 
+    private refreshCanvasToolsRegions = () => {
+        // console.log('called refreshCanvasToolsRegions', this.props.frameIndex)
+        this.clearAllRegions();
+        const regions = this._frames[this.frameIndex] || [];
+        const len = regions.length;
+        if (!regions || len === 0) return;
+
+        console.log(regions, 'regions')
+
+        regions.forEach((region: IRegion) => {
+            const loadedRegionData = CanvasHelpers.getRegionData(region);
+            this.editor.RM.addRegion(
+                region.id,
+                CanvasHelpers.scaleRegionToFrameSize(
+                    loadedRegionData,
+                    this.videoWidth,
+                    this.videoHeight,
+                    this.frameWidth,
+                    this.frameHeight
+                ),
+                CanvasHelpers.getTagsDescriptor(this.tags, region, region.trackId));
+        });
+
+        this.editor.RM.selectRegionById(regions[len - 1].id);
+    }
+
+
+    private clearAllRegions = () => {
+        this.editor.RM.deleteAllRegions();
+    }
+
+    public applyTag = (tag: string) => {
+        const selectedRegions = this.getSelectedRegions();
+        console.log(selectedRegions, '=======selectedRegions');
+        const lockedTags = this.lockedTags;
+        const lockedTagsEmpty = !lockedTags || !lockedTags.length;
+        const regionsEmpty = !selectedRegions || !selectedRegions.length;
+        if ((!tag && lockedTagsEmpty) || regionsEmpty) {
+            return;
+        }
+        let transformer: (tags: string[], tag: string) => string[];
+        if (lockedTagsEmpty) {
+            // Tag selected while region(s) selected
+            transformer = CanvasHelpers.toggleTag;
+        } else if (lockedTags.find((t) => t === tag)) {
+            // Tag added to locked tags while region(s) selected
+            transformer = CanvasHelpers.addIfMissing;
+        } else {
+            // Tag removed from locked tags while region(s) selected
+            transformer = CanvasHelpers.removeIfContained;
+        }
+        // console.log(transformer, 'check what transfer is...')
+        for (const selectedRegion of selectedRegions) {
+            selectedRegion.tags = transformer(selectedRegion.tags, tag);
+            this.updateMaxtrackId(selectedRegion);
+        }
+        this.updateRegions(selectedRegions);
+
+        this.onSelectedRegionsChanged(selectedRegions);
+
+    }
+
+    public updateMaxtrackId(region: IRegion) {
+        const tagLen = region.tags.length;
+        if (tagLen) {
+            this.updateMaxTrackId(region, 'add');
+        } else {
+            this.updateMaxTrackId(region, 'delete');
+        }
+    }
+
+    private updateTrackId(id: number) {
+        const selectedRegions = this.getSelectedRegions();
+        // const selectedRegionId = Number(this.state.selectedRegions[0].trackId);
+        const region = selectedRegions[0];
+        this.updateMaxTrackId(region, 'delete');
+        const copy = JSON.parse(JSON.stringify(region)) as IRegion;
+        copy.trackId = id;
+
+        this.updateRegion(copy);
+        this.updateMaxTrackId(copy, 'add');
+        this.onSelectedRegionsChanged([copy]);
+        this.updateRegionsBetweenKeyFrames(copy, id);
+    }
+
+    public updateRegionsBetweenKeyFrames = (copy: IRegion, trackId: number) => {
+        this.insertRegions(trackId, { ...copy });
+    }
+
+    private insertRegions = (trackId: number, newRegion: IRegion) => {
+        const trackIdGroup: IRegion[] = [
+            ...this._customData.regions[trackId].filter((region: IRegion) => region.id !== newRegion.id),
+            newRegion
+        ];
+
+        const len = trackIdGroup.length;
+        if (len < 1) {
+            return;
+        }
+        trackIdGroup.sort((a, b) => {
+            if (a.frameIndex < b.frameIndex) {
+                return -1;
+            }
+            if (a.frameIndex > b.frameIndex) {
+                return 1;
+            }
+            return 0;
+        });
+        // console.log('called, custom', trackIdGroup);
+        // const currentAssetId = this.canvas.current.state.currentAsset.asset.id;
+        const index = trackIdGroup.findIndex(region => region.frameIndex === newRegion.frameIndex);
+        const frameIndex = newRegion.frameIndex;
+        const previousCRegion = index === 0 ? undefined : this.findPreviousKeyFrame(index - 1, trackIdGroup);
+        const nextCRegion = index === len - 1 ? undefined : this.findNextKeyFrame(index + 1, trackIdGroup, len);
+
+        const currentRegions = this.getSelectedRegions();
+        const currentRegion = currentRegions[0];
+        if (previousCRegion) {
+            const pIndex = previousCRegion.frameIndex;
+            // console.log(pIndex, frameIndex, 'custom indexs');
+            if (pIndex) {
+                const pDistance = frameIndex - pIndex - 1;
+                // const pAssets = this.queryAssets(pIndex, 1, currentAssetId);
+                // //console.log(pAssets, 'ppppppppaaaa');
+                // const pLen = pAssets.length;
+                const boxs = this.generateBoxs(previousCRegion.boundingBox, currentRegion.boundingBox, pDistance + 1);
+
+                for (let i = 0; i < pDistance; i++) {
+                    const id = shortid.generate();
+                    const pRegion = JSON.parse(JSON.stringify(currentRegion)) as IRegion;
+                    pRegion.boundingBox = boxs[i];
+                    pRegion.id = id;
+                    pRegion.keyFrame = false;
+                    pRegion.frameIndex = pIndex + i + 1;
+                    pRegion.points = this.generatePoints(boxs[i]);
+                    this.updateFrameRegion(pRegion);
+                }
+            }
+            // toast.success('成功绘制到上一关键帧');
+        }
+
+        if (nextCRegion) {
+            const nIndex = nextCRegion.frameIndex;
+            if (nIndex) {
+                const nDistance = nIndex - frameIndex - 1;
+                // const nAssets = this.queryAssets(nIndex, -1, currentAssetId);
+                // const nLen = nAssets.length;
+                const boxs = this.generateBoxs(nextCRegion.boundingBox, currentRegion.boundingBox, nDistance + 1);
+                for (let i = 0; i < nDistance; i++) {
+                    const id = shortid.generate();
+                    const nRegion: IRegion = JSON.parse(JSON.stringify(currentRegion)) as IRegion;
+                    nRegion.boundingBox = boxs[i];
+                    nRegion.id = id;
+                    nRegion.keyFrame = false;
+                    nRegion.frameIndex = nIndex - i - 1;
+                    nRegion.points = this.generatePoints(boxs[i]);
+                    this.updateFrameRegion(nRegion);
+                }
+            }
+            // toast.success('成功绘制到下一关键帧');
+        }
+    }
+
+    private generatePoints = (boundingBox: { height: number, left: number, top: number, width: number }): { x: number, y: number }[] => {
+        return [
+            { x: boundingBox.left, y: boundingBox.top },
+            { x: boundingBox.left + boundingBox.width, y: boundingBox.top },
+            { x: boundingBox.left + boundingBox.width, y: boundingBox.top + boundingBox.height },
+            { x: boundingBox.left, y: boundingBox.top + boundingBox.height }
+        ];
+    }
+
+    private generateBoxs = (
+        startBoundingBox: { height: number, left: number, top: number, width: number },
+        endBoundingBox: { height: number, left: number, top: number, width: number },
+        steps: number
+    ): { height: number, left: number, top: number, width: number }[] => {
+        const xStep = (endBoundingBox.left - startBoundingBox.left) / steps;
+        const yStep = (endBoundingBox.top - startBoundingBox.top) / steps;
+        const hStep = (endBoundingBox.height - startBoundingBox.height) / steps;
+        const wStep = (endBoundingBox.width - startBoundingBox.width) / steps;
+        const boxs = [];
+        for (let i = 1; i < steps; i++) {
+            boxs.push({
+                height: startBoundingBox.height + hStep * i,
+                width: startBoundingBox.width + wStep * i,
+                left: startBoundingBox.left + xStep * i,
+                top: startBoundingBox.top + yStep * i
+            });
+        }
+        return boxs;
+    }
+
+    private findPreviousKeyFrame = (index: number, regions: IRegion[]): IRegion => {
+        return this.findKeyFrame(index, -1, regions, -1);
+    }
+
+    private findNextKeyFrame = (index: number, regions: IRegion[], len: number): IRegion => {
+        return this.findKeyFrame(index, 1, regions, len);
+    }
+
+    private findKeyFrame = (start: number, step: number, regions: IRegion[], stop: number): IRegion => {
+        let i = start;
+        let notFind = true;
+        let cRegion: IRegion;
+        while (notFind) {
+            if (regions[i].keyFrame) {
+                cRegion = regions[i];
+                notFind = false;
+            }
+            i += step;
+            if (i === stop) {
+                notFind = false;
+            }
+        }
+        return cRegion;
+    }
+
+    private updateFrameRegion = async (region: IRegion): Promise<void> => {
+
+        // const assetService = new AssetService(this.props.project);
+        // const data = await assetService.getAssetMetadata(asset);
+        // const { regions } = data;
+        const regions = this._frames[region.frameIndex] || [];
+        const remove = [...regions].filter(r => r.trackId === region.trackId);
+        if (remove.length !== 0) {
+            remove.forEach(r => {
+                this.updateMaxTrackId(r, 'delete');
+            });
+        }
+        this.updateMaxTrackId(region, 'add');
+        const removeSame = [...regions].filter(r => r.trackId !== region.trackId);
+        this._frames[region.frameIndex] = [...removeSame, region];
+    }
+
+    private moveToFrame(type: string) {
+        console.log(type, 'moveToFrame ========', this._customData);
+        if (this._customData.currentTrackId.length !== 1) return;
+        const { trackId, id } = this._customData.currentTrackId[0];
+        const regions = JSON.parse(JSON.stringify(this._customData.regions[trackId]));
+        const sortedRegions = regions.sort((a, b) => {
+            if (a.frameIndex < b.frameIndex) return -1;
+            if (a.frameIndex > b.frameIndex) return 1;
+            return 0;
+        });
+        const len = sortedRegions.length;
+        const index = sortedRegions.findIndex(region => region.id === id);
+        if (index === -1) return;
+        const frameSkipTime: number = (1 / this.simpleRate);
+        switch (type) {
+            case 'first':
+                this.seekTo((sortedRegions[0].frameIndex - 1) * frameSkipTime);
+                break;
+            case 'previous':
+                if (index === 0) return;
+                const p = this.findPrevious(sortedRegions, index);
+                if (!p) return;
+                this.seekTo((p.frameIndex - 1) * frameSkipTime);
+                break;
+            case 'next':
+                if (index === len - 1) return;
+                const n = this.findNext(sortedRegions, index);
+                if (!n) return;
+                this.seekTo((n.frameIndex - 1) * frameSkipTime);
+                break;
+            case 'last':
+                this.seekTo(([...sortedRegions].pop().frameIndex - 1) * frameSkipTime);
+                break;
+            default:
+                break;
+        }
+    }
+
+    private findPrevious = (regions, index) => {
+        if (regions[index - 1].keyFrame) {
+            return regions[index - 1];
+        }
+        return this.findPrevious(regions, index - 1);
+    }
+    private findNext = (regions, index) => {
+        if (regions[index + 1].keyFrame) {
+            return regions[index + 1];
+        }
+        return this.findNext(regions, index + 1);
+    }
 }
