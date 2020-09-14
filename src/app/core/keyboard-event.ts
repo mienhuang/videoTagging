@@ -8,11 +8,15 @@ export class KeyboardEventService {
     private arrowLeft = new Subject();
     private arrowRight = new Subject();
     private saveData = new Subject();
+    private arrowUp = new Subject();
+    private arrowDown = new Subject();
 
     spaceTabed$ = this.spaceTabed.asObservable();
     arrowLeft$ = this.arrowLeft.asObservable();
     arrowRight$ = this.arrowRight.asObservable();
-    saveData$ = this.saveData.asObservable().pipe(debounceTime(2000));
+    saveData$ = this.saveData.asObservable();
+    arrowUp$ = this.arrowUp.asObservable();
+    arrowDown$ = this.arrowDown.asObservable();
 
     private _sub = new Subscription();
 
@@ -39,11 +43,21 @@ export class KeyboardEventService {
 
     }
 
+    buttonTriggerSave() {
+        this.saveData.next(true);
+    }
+
 
     checkKeyCodeForKeyUp(event) {
         switch (event.keyCode) {
             case 32:
                 this.spaceTabed.next(true);
+                break;
+            case 38:
+                this.arrowUp.next(true);
+                break;
+            case 40:
+                this.arrowDown.next(true);
                 break;
             case 83:
                 const isCtrl = event.ctrlKey;

@@ -1,5 +1,6 @@
 import { Injectable } from '@angular/core';
 import { BehaviorSubject, Subject, Subscription, Observable } from 'rxjs';
+import { len } from 'snapsvg';
 
 @Injectable({ providedIn: 'root' })
 export class GlobalEventBusService {
@@ -12,6 +13,9 @@ export class GlobalEventBusService {
     private currentTrackId: BehaviorSubject<number> = new BehaviorSubject(0);
     private frameChange: Subject<string> = new Subject();
     private loading: BehaviorSubject<boolean> = new BehaviorSubject(false);
+    private deleteRegion: Subject<number> = new Subject();
+    private searchRegion: Subject<number> = new Subject();
+    private currentStepLength: Subject<number> = new Subject();
 
     resize$ = this.resize.asObservable();
     videoSelected$ = this.videoSelected.asObservable();
@@ -20,6 +24,9 @@ export class GlobalEventBusService {
     currentTrackId$ = this.currentTrackId.asObservable();
     frameChange$ = this.frameChange.asObservable();
     loading$ = this.loading.asObservable();
+    deleteRegion$ = this.deleteRegion.asObservable();
+    searchRegion$ = this.searchRegion.asObservable();
+    currentStepLength$ = this.currentStepLength.asObservable();
 
 
 
@@ -44,6 +51,10 @@ export class GlobalEventBusService {
         if (isNaN(id)) { return; }
 
         this.newTrackIdSeted.next(id);
+    }
+
+    setCurrentStepLength(length: number) {
+        this.currentStepLength.next(length);
     }
 
     setCurrentTrackId(id: number) {
@@ -87,5 +98,13 @@ export class GlobalEventBusService {
 
     hideLoading() {
         this.loading.next(false);
+    }
+
+    searchRegionByTrackId(trackId: number) {
+        this.searchRegion.next(trackId);
+    }
+
+    deleteAllRegionsByTrackId(trackId: number) {
+        this.deleteRegion.next(trackId);
     }
 }

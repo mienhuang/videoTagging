@@ -2,11 +2,20 @@
     <div class="cell">
         <label>
             Track ID:
-            <input type="number" [value]="eventBus.currentTrackId$ | async" (change)="trackIdChange($event)">
+            <input
+                type="number"
+                [value]="eventBus.currentTrackId$ | async"
+                (change)="trackIdChange($event)"
+            />
         </label>
     </div>
     <div class="cell">
-        <button mat-stroked-button color="primary" title="First Key Frame" (click)="changeFrame('first')">
+        <button
+            mat-stroked-button
+            color="primary"
+            title="First Key Frame"
+            (click)="changeFrame('first')"
+        >
             <svg>
                 <use xlink:href="#double-left-arrow"></use>
             </svg>
@@ -14,7 +23,12 @@
     </div>
 
     <div class="cell">
-        <button mat-stroked-button color="primary" title="Previous Key Frame" (click)="changeFrame('previous')">
+        <button
+            mat-stroked-button
+            color="primary"
+            title="Previous Key Frame"
+            (click)="changeFrame('previous')"
+        >
             <svg>
                 <use xlink:href="#single-left-arrow"></use>
             </svg>
@@ -22,7 +36,12 @@
     </div>
 
     <div class="cell">
-        <button mat-stroked-button color="primary" title="Next Key Frame" (click)="changeFrame('next')">
+        <button
+            mat-stroked-button
+            color="primary"
+            title="Next Key Frame"
+            (click)="changeFrame('next')"
+        >
             <svg class="right">
                 <use xlink:href="#single-left-arrow"></use>
             </svg>
@@ -30,7 +49,12 @@
     </div>
 
     <div class="cell">
-        <button mat-stroked-button color="primary" title="Last Key Frame" (click)="changeFrame('last')">
+        <button
+            mat-stroked-button
+            color="primary"
+            title="Last Key Frame"
+            (click)="changeFrame('last')"
+        >
             <svg class="right">
                 <use xlink:href="#double-left-arrow"></use>
             </svg>
@@ -38,15 +62,36 @@
     </div>
 
     <div class="cell">
-        <button (click)="toggleTag('face')" mat-raised-button color="primary">face</button>
+        <button (click)="toggleTag('face')" mat-raised-button color="primary">
+            face
+        </button>
     </div>
     <div class="cell">
         <label>
             Search:
-            <input type="number" [value]="eventBus.currentTrackId$ | async" (change)="trackIdChange($event)">
+            <input
+                #search
+                type="number"
+                [value]="eventBus.currentTrackId$ | async"
+            />
         </label>
     </div>
     <div class="cell">
-        <button mat-raised-button color="warn" (click)="deleteAll()">Delete All</button>
+        <button
+            mat-raised-button
+            color="primary"
+            (click)="searchRegion(search.value)"
+        >
+            Search
+        </button>
+    </div>
+    <div class="cell">
+        <button
+            mat-raised-button
+            color="warn"
+            (click)="deleteAll(search.value)"
+        >
+            Delete All
+        </button>
     </div>
 </div>

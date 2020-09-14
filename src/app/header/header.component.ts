@@ -8,7 +8,10 @@ import { MatSnackBar } from '@angular/material/snack-bar';
     styleUrls: ['./header.component.scss']
 })
 export class HeaderComponent implements OnInit {
-    constructor(public eventBus: GlobalEventBusService, private _snackBar: MatSnackBar) { }
+    constructor(
+        public eventBus: GlobalEventBusService,
+        private _snackBar: MatSnackBar
+    ) { }
 
     ngOnInit(): void {
     }
@@ -27,9 +30,19 @@ export class HeaderComponent implements OnInit {
         this.eventBus.changeFrame(type);
     }
 
-    deleteAll() {
-        this._snackBar.open('test', 'Dance', {
-            duration: 3000,
+    searchRegion(trackId: string) {
+        this.eventBus.searchRegionByTrackId(Number(trackId));
+    }
+
+    deleteAll(trackId: string) {
+        const result = confirm(`Make sure you want to delete all region?`);
+
+        if (!result) return;
+
+        this._snackBar.open(`Hope you know what you are doing`, '', {
+            duration: 3000
         });
+
+        this.eventBus.deleteAllRegionsByTrackId(Number(trackId));
     }
 }

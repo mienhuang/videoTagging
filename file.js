@@ -14,33 +14,14 @@ const defaultText = `{
 
 class FileService {
 
+    removeAttach() {
+        ipcMain.off('save_file', this.saveFileCb);
+        ipcMain.off('read_file', this.readFileCb);
+    }
+
     attch() {
-        ipcMain.on('save_file', (event, arg) => {
-            const { filePath, fileName } = arg.path;
-            const contents = arg.contents;
-            this.writeText(`${filePath}${fileName.split('.')[0]}.vt`, contents)
-                .then(() => {
-                    event.reply('file_save', 'file saved')
-                });
-        });
-
-        ipcMain.on('read_file', (event, arg) => {
-            const { path, name } = arg;
-            const file = `${path}${name.split('.')[0]}.vt`;
-            if (fs.existsSync(file)) {
-                this.readText(file)
-                    .then((data) => {
-                        event.reply('file_read', data)
-                    });
-
-                return;
-            }
-
-            this.writeText(file, defaultText)
-                .then(() => {
-                    event.reply('file_read', defaultText)
-                })
-        });
+        ipcMain.on('save_file', this.saveFileCb);
+        ipcMain.on('read_file', this.readFileCb);
     }
 
     readText(filePath) {
@@ -105,6 +86,33 @@ class FileService {
                 resolve();
             });
         });
+    }
+
+    saveFileCb = (event, arg) => {
+        const { filePath, fileName } = arg.path;
+        const contents = arg.contents;
+        this.writeText(`${filePath}${fileName.split('.')[0]}.vt`, contents)
+            .then(() => {
+                event.reply('file_save', 'file saved')
+            });
+    }
+
+    readFileCb = (event, arg) => {
+        const { path, name } = arg;
+        const file = `${path}${name.split('.')[0]}.vt`;
+        if (fs.existsSync(file)) {
+            this.readText(file)
+                .then((data) => {
+                    event.reply('file_read', data)
+                });
+
+            return;
+        }
+
+        this.writeText(file, defaultText)
+            .then(() => {
+                event.reply('file_read', defaultText)
+            })
     }
 }
 

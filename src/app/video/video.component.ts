@@ -10,7 +10,8 @@ import {
     OnChanges,
     SimpleChanges,
     AfterViewInit,
-    ChangeDetectorRef
+    ChangeDetectorRef,
+    ChangeDetectionStrategy
 } from '@angular/core';
 import { SafeUrl, DomSanitizer } from '@angular/platform-browser';
 
@@ -19,7 +20,7 @@ import shortid from 'shortid';
 import { GlobalEventBusService } from '../core/event-bus';
 import { KeyboardEventService } from '../core/keyboard-event';
 import { tap, filter, delay, switchMap, switchMapTo } from 'rxjs/operators';
-import { Subscription } from 'rxjs';
+import { BehaviorSubject, Subscription } from 'rxjs';
 import { CanvasTools } from 'vott-ct';
 import { RegionData } from 'vott-ct/lib/js/CanvasTools/Core/RegionData';
 
@@ -42,7 +43,8 @@ import { MatSnackBar } from '@angular/material/snack-bar';
 @Component({
     selector: 'app-video',
     templateUrl: './video.component.html',
-    styleUrls: ['./video.component.scss']
+    styleUrls: ['./video.component.scss'],
+    changeDetection: ChangeDetectionStrategy.OnPush
 })
 export class VideoComponent implements OnInit, OnDestroy, OnChanges, AfterViewInit {
 
@@ -51,7 +53,7 @@ export class VideoComponent implements OnInit, OnDestroy, OnChanges, AfterViewIn
     video: HTMLVideoElement;
     scale = 1;
     height = 0;
-    width = 0;
+    width = new BehaviorSubject(0);
 
     @ViewChild('container') container: ElementRef;
     @ViewChild('videoContainer') videoContainer: ElementRef;
@@ -67,7 +69,7 @@ export class VideoComponent implements OnInit, OnDestroy, OnChanges, AfterViewIn
     seekTime = 0;
 
     editor: Editor;
-    progressValue = 0;
+    progressValue = new BehaviorSubject(0);
 
     videoHeight = 0;
     videoWidth = 0;
@@ -81,6 +83,7 @@ export class VideoComponent implements OnInit, OnDestroy, OnChanges, AfterViewIn
     };
 
     private sub = new Subscription();
+    private stepLength = 1;
     private step = 0.02;
     private _customData = {
         maxTrackId: 0,
@@ -111,7 +114,7 @@ export class VideoComponent implements OnInit, OnDestroy, OnChanges, AfterViewIn
         const resizeSub = this.event.resize$
             .pipe(
                 tap(({ width, height }) => {
-                    this.width = width - 360;
+                    this.width.next(width - 360);
                 })
             )
             .subscribe();
@@ -145,6 +148,7 @@ export class VideoComponent implements OnInit, OnDestroy, OnChanges, AfterViewIn
                 }),
                 tap(() => {
                     this.event.hideLoading();
+                    this.cdr.markForCheck();
                 })
             )
             .subscribe();
@@ -153,6 +157,9 @@ export class VideoComponent implements OnInit, OnDestroy, OnChanges, AfterViewIn
             .pipe(
                 tap((type: string) => {
                     this.applyTag(type);
+                }),
+                tap(() => {
+                    this.cdr.markForCheck();
                 })
             )
             .subscribe();
@@ -160,6 +167,9 @@ export class VideoComponent implements OnInit, OnDestroy, OnChanges, AfterViewIn
             .pipe(
                 tap((id: number) => {
                     this.updateTrackId(id);
+                }),
+                tap(() => {
+                    this.cdr.markForCheck();
                 })
             )
             .subscribe();
@@ -167,7 +177,10 @@ export class VideoComponent implements OnInit, OnDestroy, OnChanges, AfterViewIn
 
         const spanceSub = this.keyboardEvent.spaceTabed$
             .pipe(
-                tap(() => { this.togglePlay(); })
+                tap(() => { this.togglePlay(); }),
+                tap(() => {
+                    this.cdr.markForCheck();
+                })
             )
             .subscribe();
 
@@ -216,6 +229,29 @@ export class VideoComponent implements OnInit, OnDestroy, OnChanges, AfterViewIn
             )
             .subscribe();
 
+        const searchRegionSub = this.event.searchRegion$
+            .pipe(
+                tap((trackId: number) => {
+                    this.searchRegionByTrackId(trackId);
+                })
+            )
+            .subscribe();
+
+        const deleteRegionSub = this.event.deleteRegion$
+            .pipe(
+                tap((trackId: number) => {
+                    this.deleteRegionsByTrackId(trackId);
+                })
+            )
+            .subscribe();
+
+        const stepLengthSub = this.event.currentStepLength$
+            .pipe(
+                tap((length: number) => {
+                    this.stepLength = length;
+                })
+            )
+            .subscribe();
 
         this.sub.add(resizeSub);
         this.sub.add(videoSelectSub);
@@ -226,6 +262,9 @@ export class VideoComponent implements OnInit, OnDestroy, OnChanges, AfterViewIn
         this.sub.add(newTrackIdSub);
         this.sub.add(saveDataSub);
         this.sub.add(frameChangeSub);
+        this.sub.add(searchRegionSub);
+        this.sub.add(deleteRegionSub);
+        this.sub.add(stepLengthSub);
     }
 
     ngOnInit(): void {
@@ -242,9 +281,7 @@ export class VideoComponent implements OnInit, OnDestroy, OnChanges, AfterViewIn
         const readFileSub = this.event.readFileOrCreate(filePath, fileName)
             .pipe(
                 tap((data) => {
-                    console.log(data, 'readFileOrCreate');
                     const { customData, frameData } = JSON.parse(data);
-                    console.log({ customData, frameData }, 'readFileOrCreate');
                     this._customData = customData;
                     this._frames = frameData;
                 }),
@@ -257,6 +294,8 @@ export class VideoComponent implements OnInit, OnDestroy, OnChanges, AfterViewIn
         this.sub.add(readFileSub);
         this.filePath = this.domSanitizer.bypassSecurityTrustUrl(`${localStorage.getItem('filePath')}${localStorage.getItem('fileName')}`);
         this.initVideo();
+
+        this.cdr.markForCheck();
     }
 
     initVideo() {
@@ -279,7 +318,7 @@ export class VideoComponent implements OnInit, OnDestroy, OnChanges, AfterViewIn
         const ele = document.getElementById('container');
 
         this.height = ele.offsetHeight;
-        this.width = ele.offsetWidth;
+        this.width.next(ele.offsetWidth);
     }
 
     startPlay() {
@@ -302,6 +341,9 @@ export class VideoComponent implements OnInit, OnDestroy, OnChanges, AfterViewIn
 
     play() {
         if (!this.video) return;
+
+        console.log('calllllllll')
+
         this.isStartedPlay = true;
         this.isPlaying = true;
         this.video.play();
@@ -338,7 +380,7 @@ export class VideoComponent implements OnInit, OnDestroy, OnChanges, AfterViewIn
     }
 
     moveToNextFrame() {
-        const target = Number(((Math.ceil(this.currentTime / this.step) + 1) * this.step).toFixed(6));
+        const target = Number(((Math.ceil(this.currentTime / this.step) + this.stepLength) * this.step).toFixed(6));
         if (target > this.duration) {
             return;
         }
@@ -346,7 +388,7 @@ export class VideoComponent implements OnInit, OnDestroy, OnChanges, AfterViewIn
     }
 
     moveToPreviousFrame() {
-        const target = Number(((Math.floor(this.currentTime / this.step) - 1) * this.step).toFixed(6));
+        const target = Number(((Math.floor(this.currentTime / this.step) - this.stepLength) * this.step).toFixed(6));
         if (target < 0) {
             return;
         }
@@ -357,6 +399,11 @@ export class VideoComponent implements OnInit, OnDestroy, OnChanges, AfterViewIn
         this.seekTime = time;
         this.pasue();
         this.video.currentTime = this.seekTime;
+
+        this.currentTime = this.video.currentTime;
+        this.progressValue.next((this.currentTime / this.duration) * this.progressMaxValue);
+        this.checkFrameIndex();
+        this.currentTimeChange.emit(this.video.currentTime);
     }
 
     mute() {
@@ -378,6 +425,7 @@ export class VideoComponent implements OnInit, OnDestroy, OnChanges, AfterViewIn
         this.isPlaying = false;
 
         this.stopPlay();
+        this.cdr.markForCheck();
     }
 
     readyToPlay = () => {
@@ -443,7 +491,7 @@ export class VideoComponent implements OnInit, OnDestroy, OnChanges, AfterViewIn
     private onPlaying() {
         this.currentTimeId = setInterval(() => {
             this.currentTime = this.video.currentTime;
-            this.progressValue = (this.currentTime / this.duration) * this.progressMaxValue;
+            this.progressValue.next((this.currentTime / this.duration) * this.progressMaxValue);
             this.checkFrameIndex();
             this.currentTimeChange.emit(this.video.currentTime);
         }, 50);
@@ -971,6 +1019,42 @@ export class VideoComponent implements OnInit, OnDestroy, OnChanges, AfterViewIn
         return boxs;
     }
 
+    private searchRegionByTrackId(trackId: number) {
+        const regions: IRegion[] = this._customData.regions[trackId] || [];
+        const sortedRegions = regions.sort((a, b) => {
+            if (a.frameIndex < b.frameIndex) return -1;
+            if (a.frameIndex > b.frameIndex) return 1;
+            return 0;
+        });
+
+        const targetRegion = sortedRegions[0];
+        const frameSkipTime: number = (1 / this.simpleRate);
+        this.seekTo((targetRegion.frameIndex - 1) * frameSkipTime);
+    }
+
+    private deleteRegionsByTrackId(trackId: number) {
+        const regions: IRegion[] = this._customData.regions[trackId] || [];
+
+        regions.forEach(({ frameIndex }: IRegion) => {
+            const frameRegions = this._frames[frameIndex];
+            this._frames[frameIndex] = frameRegions.filter((region: IRegion) => trackId !== region.trackId);
+        });
+
+        this._customData.regions[trackId] = [];
+        const list = [...this._customData.maxTrackIdList];
+        const index = list.findIndex(value => value === trackId);
+        if (index !== -1) {
+            list.splice(index, 1);
+        }
+
+        this._customData.maxTrackIdList = list;
+        this._customData.maxTrackId = [...list].pop();
+        this._customData.currentTrackId = [];
+
+        this.event.setCurrentTrackId(0);
+        this.clearAllRegions();
+    }
+
     private findPreviousKeyFrame = (index: number, regions: IRegion[]): IRegion => {
         return this.findKeyFrame(index, -1, regions, -1);
     }
@@ -1063,4 +1147,152 @@ export class VideoComponent implements OnInit, OnDestroy, OnChanges, AfterViewIn
         }
         return this.findNext(regions, index + 1);
     }
+
+    // TODO
+
+    // private selecteFaceId = (id: string, src: string) => {
+    //     console.log(this.state.selectedRegions, this._customData, this._frames)
+    //     const trackId = this.state.selectedRegions[0].trackId;
+    //     const regions = this._customData.regions[trackId];
+    //     regions.forEach((region: IRegion) => {
+    //         region.faceId = id;
+    //         region.imgPath = src;
+    //         const frameIndex = region.frameIndex;
+    //         this._frames[frameIndex].forEach((fr: IRegion) => {
+    //             if (fr.trackId === trackId) {
+    //                 fr.faceId = id;
+    //                 fr.imgPath = src;
+    //             }
+    //         })
+    //     });
+    // }
+
+
+    // public search = (selectedRegions) => {
+    //     const imgURL = localStorage.getItem('imgURL') || 'http://192.168.88.156:5000';
+    //     const imgTabIDList = localStorage.getItem('imgTL') || '1234567890';
+    //     console.log(selectedRegions, 'called search..');
+    //     const { tags, boundingBox: { height, width, left: x, top: y } } = selectedRegions[0];
+    //     const sourceCanvas = this.canvasZone.current.querySelector("canvas");
+    //     const newCanvas = document.getElementById('new-canvas') as HTMLCanvasElement;
+    //     const _h = Math.round(height);
+    //     const _w = Math.round(width);
+    //     newCanvas.width = _w;
+    //     newCanvas.height = _h;
+    //     newCanvas.style.width = `${_w}px`;
+    //     newCanvas.style.height = `${_h}px`;
+    //     const newCtx = newCanvas.getContext('2d');
+    //     const ctx = sourceCanvas.getContext('2d');
+    //     var img = ctx.getImageData(x, y, _w, _h);
+    //     newCtx.clearRect(0, 0, 0, 0);
+    //     newCtx.putImageData(img, 0, 0);
+
+    //     const ImageFData = newCanvas.toDataURL("image/jpeg", 1.0).split("data:image/jpeg;base64,")[1];
+
+    //     const ImageSearchType = tags[0].replace(/\b\w+\b/g, function (word) {
+    //         return word.substring(0, 1).toUpperCase() + word.substring(1);
+    //     });
+
+    //     const url = `${imgURL}/VIAS/ImageSearchedByImagesSync`; // can be changed
+    //     const data = {
+    //         "SearchID": Math.random().toString(36).split('.')[1],
+    //         "MaxNumRecordReturn": 10,
+    //         "SearchType": ImageSearchType,
+    //         "TabIDList": imgTabIDList, // can be changed
+    //         "Image": { "EventSort": 11, "Data": ImageFData }
+    //     };
+
+
+    //     fetch(url, {
+    //         method: 'POST',
+    //         body: JSON.stringify(data),
+    //         headers: new Headers({
+    //             'Content-Type': 'application/json;charset=UTF-8'
+    //         })
+    //     })
+    //         .then(res => res.json())
+    //         // .then(() => {
+    //         //     return {
+    //         //         "ImageResultSBI": {
+    //         //             "SearchID": "your SearchID",
+    //         //             "ReturnNum": 2,
+    //         //             "TotalNum": 2,
+    //         //             "FaceObjectList": {
+    //         //                 "FaceObject": [
+    //         //                     {
+    //         //                         "FaceID": "123123",
+    //         //                         "TabID": "00000000000000000000050000001000000000001",
+    //         //                         "Similaritydegree": 0.123
+    //         //                     },
+    //         //                     {
+    //         //                         "FaceID": "234434",
+    //         //                         "TabID": "00000000000000000000050000001000000000001",
+    //         //                         "Similaritydegree": 0.023
+    //         //                     }
+    //         //                 ]
+    //         //             }
+    //         //         }
+    //         //     };
+    //         // })
+    //         .then(response => response.ImageResultSBI.FaceObjectList.FaceObject)
+    //         .then(list => this.queryAllFaceInfo(list))
+    //         .then(data => this.props.queryFaceCb(data))
+    //         .catch(error => console.error('Error:', error))
+    //         .then(response => console.log('Success:', response));
+
+    // }
+
+    // queryAllFaceInfo = (list: {
+    //     FaceID: string,
+    //     TabID: string,
+    //     Similaritydegree: number
+    // }[]) => {
+    //     return Promise.all(
+    //         list.map(face => this.getImageById(face.FaceID, face.Similaritydegree))
+    //     );
+    // }
+
+    // getImageById = (imageId, similaritydegree: number) => {
+    //     const faceURL = localStorage.getItem('faceURL') || 'http://127.0.0.1:8080';
+    //     const subImageType = localStorage.getItem('subImageType') || '02';
+
+    //     const url = `${faceURL}/VIID/Faces/${imageId}?SubImageType=${subImageType}`;
+    //     return fetch(url, {
+    //         method: 'GET',
+    //         headers: new Headers({
+    //             'Content-Type': 'application/json;charset=UTF-8'
+    //         })
+    //     })
+    //         .then(res => res.json())
+    //         // .then(data => ({
+    //         //     "FaceList": {
+    //         //         "FaceObject": [
+    //         //             {
+    //         //                 "FaceID": "122323333344444",
+    //         //                 "Name": "zd",
+    //         //                 "SubImageList": {
+    //         //                     "SubImageInfo": {
+    //         //                         "ImageID": "122323333344444",
+    //         //                         "DeviceID": "1111",
+    //         //                         "Type": "11",
+    //         //                         "SubType": "01",
+    //         //                         "FileFormat": "png",
+    //         //                         "Width": "11",
+    //         //                         "Height": "11",
+    //         //                         "StoragePath": "http://127.0.0.1:9333/3,113457777"
+    //         //                     }
+    //         //                 }
+    //         //             }
+    //         //         ]
+    //         //     }
+    //         // }))
+    //         .then(data => {
+    //             return {
+    //                 name: data.FaceList.FaceObject[0].Name,
+    //                 faceId: data.FaceList.FaceObject[0].FaceID,
+    //                 path: data.FaceList.FaceObject[0].SubImageList.SubImageInfo.StoragePath,
+    //                 similaritydegree
+    //             }
+    //         })
+    // }
 }
