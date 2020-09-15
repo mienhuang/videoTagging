@@ -1,8 +1,14 @@
 <div #container id="container" class="container">
     <div class="video-container">
+        <canvas id="new-canvas"></canvas>
+        <canvas id="post-canvas"></canvas>
         <div class="video-inner" #videoContainer>
-            <video #video id="video" [width]="width | async" [src]="filePath">
-            </video>
+            <video
+                #video
+                id="video"
+                [width]="width | async"
+                [src]="filePath"
+            ></video>
             <div id="editorDiv"></div>
         </div>
         <div *ngIf="false" class="big-play" (click)="startPlay()">
@@ -10,8 +16,8 @@
                 <use xlink:href="#play"></use>
             </svg>
         </div>
-
     </div>
+    <button (click)="searchRegion()">Search</button>
     <div class="control">
         <div class="control-btn">
             <svg *ngIf="!isPlaying" (click)="startPlay()">
@@ -22,8 +28,14 @@
             </svg>
         </div>
         <div class="progress-bar">
-            <mat-slider class="bar" (change)="progressChange($event)" [value]="progressValue | async" tickInterval="1000"
-                min="0" [max]="progressMaxValue">
+            <mat-slider
+                class="bar"
+                (change)="progressChange($event)"
+                [value]="progressValue | async"
+                tickInterval="1000"
+                min="0"
+                [max]="progressMaxValue"
+            >
             </mat-slider>
         </div>
 
@@ -35,8 +47,14 @@
                 <use xlink:href="#volume-off"></use>
             </svg>
             <div class="volume-control">
-                <mat-slider (input)="volumeChange($event)" thumbLabel [displayWith]="volumeFormatLabel"
-                    tickInterval="10000" min="0" max="100">
+                <mat-slider
+                    (input)="volumeChange($event)"
+                    thumbLabel
+                    [displayWith]="volumeFormatLabel"
+                    tickInterval="10000"
+                    min="0"
+                    max="100"
+                >
                 </mat-slider>
             </div>
         </div>

@@ -38,6 +38,7 @@ import { Rect } from 'vott-ct/lib/js/CanvasTools/Core/Rect';
 import { IRegion } from '../core/models/canvas.model';
 import { ICustomData } from '../core/models/region.model';
 import { MatSnackBar } from '@angular/material/snack-bar';
+import { IFace } from '../core/models/face.model';
 
 
 @Component({
@@ -253,6 +254,14 @@ export class VideoComponent implements OnInit, OnDestroy, OnChanges, AfterViewIn
             )
             .subscribe();
 
+        const faceChooseSub = this.event.faceChooseEvent$
+            .pipe(
+                tap((face: IFace) => {
+                    this.setFaceId(face);
+                })
+            )
+            .subscribe();
+
         this.sub.add(resizeSub);
         this.sub.add(videoSelectSub);
         this.sub.add(tagChangeSub);
@@ -265,6 +274,7 @@ export class VideoComponent implements OnInit, OnDestroy, OnChanges, AfterViewIn
         this.sub.add(searchRegionSub);
         this.sub.add(deleteRegionSub);
         this.sub.add(stepLengthSub);
+        this.sub.add(faceChooseSub);
     }
 
     ngOnInit(): void {
@@ -442,8 +452,15 @@ export class VideoComponent implements OnInit, OnDestroy, OnChanges, AfterViewIn
         this.frameWidth = this.video.clientWidth;
     }
 
+    updateCanvas() {
+        const canvas = document.querySelector('#post-canvas') as HTMLCanvasElement;
+        canvas.width = this.video.videoWidth * this.scale;
+        canvas.height = this.video.videoHeight * this.scale;
+        canvas.getContext('2d').drawImage(this.video, 0, 0, canvas.width, canvas.height);
+    }
+
     addPoster = () => {
-        const canvas = document.createElement('canvas');
+        const canvas = document.getElementById('new-canvas') as HTMLCanvasElement;
         canvas.width = this.video.videoWidth * this.scale;
         canvas.height = this.video.videoHeight * this.scale;
         canvas.getContext('2d').drawImage(this.video, 0, 0, canvas.width, canvas.height);
@@ -452,6 +469,11 @@ export class VideoComponent implements OnInit, OnDestroy, OnChanges, AfterViewIn
         const src = canvas.toDataURL('image/jpeg', 1.0);
         // output.appendChild(img);
         // this.video.setAttribute('poster', src);
+    }
+
+    searchRegion() {
+        const region = this.getSelectedRegions()[0];
+        this.search(region);
     }
 
     ngOnChanges(changes: SimpleChanges) {
@@ -696,6 +718,12 @@ export class VideoComponent implements OnInit, OnDestroy, OnChanges, AfterViewIn
             this._customDataDecrease({ trackId: region.trackId, id: region.id, region: { ...region } });
             this.removeRegionFromFrames(region);
         }
+
+        this.event.updateRegionInfo({
+            totalFrames: 0,
+            totalRegions: 0,
+            maxTrackId: this._customData.maxTrackId
+        });
         // this.refreshCanvasToolsRegions();
     }
 
@@ -1150,149 +1178,151 @@ export class VideoComponent implements OnInit, OnDestroy, OnChanges, AfterViewIn
 
     // TODO
 
-    // private selecteFaceId = (id: string, src: string) => {
-    //     console.log(this.state.selectedRegions, this._customData, this._frames)
-    //     const trackId = this.state.selectedRegions[0].trackId;
-    //     const regions = this._customData.regions[trackId];
-    //     regions.forEach((region: IRegion) => {
-    //         region.faceId = id;
-    //         region.imgPath = src;
-    //         const frameIndex = region.frameIndex;
-    //         this._frames[frameIndex].forEach((fr: IRegion) => {
-    //             if (fr.trackId === trackId) {
-    //                 fr.faceId = id;
-    //                 fr.imgPath = src;
-    //             }
-    //         })
-    //     });
-    // }
+    private setFaceId = ({ faceId, path }: IFace) => {
+        const trackId = this.getSelectedRegions()[0].trackId;
+        const regions = this._customData.regions[trackId];
+        regions.forEach((region: IRegion) => {
+            region.faceId = faceId;
+            region.imgPath = path;
+            const frameIndex = region.frameIndex;
+            this._frames[frameIndex].forEach((fr: IRegion) => {
+                if (fr.trackId === trackId) {
+                    fr.faceId = faceId;
+                    fr.imgPath = path;
+                }
+            });
+        });
+    }
 
 
-    // public search = (selectedRegions) => {
-    //     const imgURL = localStorage.getItem('imgURL') || 'http://192.168.88.156:5000';
-    //     const imgTabIDList = localStorage.getItem('imgTL') || '1234567890';
-    //     console.log(selectedRegions, 'called search..');
-    //     const { tags, boundingBox: { height, width, left: x, top: y } } = selectedRegions[0];
-    //     const sourceCanvas = this.canvasZone.current.querySelector("canvas");
-    //     const newCanvas = document.getElementById('new-canvas') as HTMLCanvasElement;
-    //     const _h = Math.round(height);
-    //     const _w = Math.round(width);
-    //     newCanvas.width = _w;
-    //     newCanvas.height = _h;
-    //     newCanvas.style.width = `${_w}px`;
-    //     newCanvas.style.height = `${_h}px`;
-    //     const newCtx = newCanvas.getContext('2d');
-    //     const ctx = sourceCanvas.getContext('2d');
-    //     var img = ctx.getImageData(x, y, _w, _h);
-    //     newCtx.clearRect(0, 0, 0, 0);
-    //     newCtx.putImageData(img, 0, 0);
+    public search = (region) => {
+        this.updateCanvas();
+        const imgURL = localStorage.getItem('imgURL') || 'http://192.168.88.156:5000';
+        const imgTabIDList = localStorage.getItem('imgTL') || '1234567890';
+        console.log(region, 'called search..');
+        const { tags, boundingBox: { height, width, left: x, top: y } } = region;
+        const sourceCanvas = document.querySelector('#post-canvas') as HTMLCanvasElement;
+        const newCanvas = document.getElementById('new-canvas') as HTMLCanvasElement;
+        const _h = Math.round(height);
+        const _w = Math.round(width);
+        newCanvas.width = _w;
+        newCanvas.height = _h;
+        newCanvas.style.width = `${_w}px`;
+        newCanvas.style.height = `${_h}px`;
+        const newCtx = newCanvas.getContext('2d');
+        const ctx = sourceCanvas.getContext('2d');
+        const img = ctx.getImageData(x, y, _w, _h);
+        newCtx.clearRect(0, 0, 0, 0);
+        newCtx.putImageData(img, 0, 0);
 
-    //     const ImageFData = newCanvas.toDataURL("image/jpeg", 1.0).split("data:image/jpeg;base64,")[1];
+        const ImageFData = newCanvas.toDataURL('image/jpeg', 1.0).split('data:image/jpeg;base64,')[1];
 
-    //     const ImageSearchType = tags[0].replace(/\b\w+\b/g, function (word) {
-    //         return word.substring(0, 1).toUpperCase() + word.substring(1);
-    //     });
+        console.log(ImageFData, 'ImageFData');
 
-    //     const url = `${imgURL}/VIAS/ImageSearchedByImagesSync`; // can be changed
-    //     const data = {
-    //         "SearchID": Math.random().toString(36).split('.')[1],
-    //         "MaxNumRecordReturn": 10,
-    //         "SearchType": ImageSearchType,
-    //         "TabIDList": imgTabIDList, // can be changed
-    //         "Image": { "EventSort": 11, "Data": ImageFData }
-    //     };
+        const ImageSearchType = tags[0].replace(/\b\w+\b/g, function (word) {
+            return word.substring(0, 1).toUpperCase() + word.substring(1);
+        });
+
+        const url = `${imgURL}/VIAS/ImageSearchedByImagesSync`; // can be changed
+        const data = {
+            'SearchID': Math.random().toString(36).split('.')[1],
+            'MaxNumRecordReturn': 10,
+            'SearchType': ImageSearchType,
+            'TabIDList': imgTabIDList, // can be changed
+            'Image': { 'EventSort': 11, 'Data': ImageFData }
+        };
 
 
-    //     fetch(url, {
-    //         method: 'POST',
-    //         body: JSON.stringify(data),
-    //         headers: new Headers({
-    //             'Content-Type': 'application/json;charset=UTF-8'
-    //         })
-    //     })
-    //         .then(res => res.json())
-    //         // .then(() => {
-    //         //     return {
-    //         //         "ImageResultSBI": {
-    //         //             "SearchID": "your SearchID",
-    //         //             "ReturnNum": 2,
-    //         //             "TotalNum": 2,
-    //         //             "FaceObjectList": {
-    //         //                 "FaceObject": [
-    //         //                     {
-    //         //                         "FaceID": "123123",
-    //         //                         "TabID": "00000000000000000000050000001000000000001",
-    //         //                         "Similaritydegree": 0.123
-    //         //                     },
-    //         //                     {
-    //         //                         "FaceID": "234434",
-    //         //                         "TabID": "00000000000000000000050000001000000000001",
-    //         //                         "Similaritydegree": 0.023
-    //         //                     }
-    //         //                 ]
-    //         //             }
-    //         //         }
-    //         //     };
-    //         // })
-    //         .then(response => response.ImageResultSBI.FaceObjectList.FaceObject)
-    //         .then(list => this.queryAllFaceInfo(list))
-    //         .then(data => this.props.queryFaceCb(data))
-    //         .catch(error => console.error('Error:', error))
-    //         .then(response => console.log('Success:', response));
+        fetch(url, {
+            method: 'POST',
+            body: JSON.stringify(data),
+            headers: new Headers({
+                'Content-Type': 'application/json;charset=UTF-8'
+            })
+        })
+            .then(res => res.json())
+            // .then(() => {
+            //     return {
+            //         'ImageResultSBI': {
+            //             'SearchID': 'your SearchID',
+            //             'ReturnNum': 2,
+            //             'TotalNum': 2,
+            //             'FaceObjectList': {
+            //                 'FaceObject': [
+            //                     {
+            //                         'FaceID': '123123',
+            //                         'TabID': '00000000000000000000050000001000000000001',
+            //                         'Similaritydegree': 0.123
+            //                     },
+            //                     {
+            //                         'FaceID': '234434',
+            //                         'TabID': '00000000000000000000050000001000000000001',
+            //                         'Similaritydegree': 0.023
+            //                     }
+            //                 ]
+            //             }
+            //         }
+            //     };
+            // })
+            .then(response => response.ImageResultSBI.FaceObjectList.FaceObject)
+            .then(list => this.queryAllFaceInfo(list))
+            // .then(data => this.props.queryFaceCb(data))
+            .catch(error => console.error('Error:', error))
+            .then(response => console.log('Success:', response));
 
-    // }
+    }
 
-    // queryAllFaceInfo = (list: {
-    //     FaceID: string,
-    //     TabID: string,
-    //     Similaritydegree: number
-    // }[]) => {
-    //     return Promise.all(
-    //         list.map(face => this.getImageById(face.FaceID, face.Similaritydegree))
-    //     );
-    // }
+    queryAllFaceInfo = (list: {
+        FaceID: string,
+        TabID: string,
+        Similaritydegree: number
+    }[]) => {
+        return Promise.all(
+            list.map(face => this.getImageById(face.FaceID, face.Similaritydegree))
+        );
+    }
 
-    // getImageById = (imageId, similaritydegree: number) => {
-    //     const faceURL = localStorage.getItem('faceURL') || 'http://127.0.0.1:8080';
-    //     const subImageType = localStorage.getItem('subImageType') || '02';
+    getImageById = (imageId, similaritydegree: number) => {
+        const faceURL = localStorage.getItem('faceURL') || 'http://127.0.0.1:8080';
+        const subImageType = localStorage.getItem('subImageType') || '02';
 
-    //     const url = `${faceURL}/VIID/Faces/${imageId}?SubImageType=${subImageType}`;
-    //     return fetch(url, {
-    //         method: 'GET',
-    //         headers: new Headers({
-    //             'Content-Type': 'application/json;charset=UTF-8'
-    //         })
-    //     })
-    //         .then(res => res.json())
-    //         // .then(data => ({
-    //         //     "FaceList": {
-    //         //         "FaceObject": [
-    //         //             {
-    //         //                 "FaceID": "122323333344444",
-    //         //                 "Name": "zd",
-    //         //                 "SubImageList": {
-    //         //                     "SubImageInfo": {
-    //         //                         "ImageID": "122323333344444",
-    //         //                         "DeviceID": "1111",
-    //         //                         "Type": "11",
-    //         //                         "SubType": "01",
-    //         //                         "FileFormat": "png",
-    //         //                         "Width": "11",
-    //         //                         "Height": "11",
-    //         //                         "StoragePath": "http://127.0.0.1:9333/3,113457777"
-    //         //                     }
-    //         //                 }
-    //         //             }
-    //         //         ]
-    //         //     }
-    //         // }))
-    //         .then(data => {
-    //             return {
-    //                 name: data.FaceList.FaceObject[0].Name,
-    //                 faceId: data.FaceList.FaceObject[0].FaceID,
-    //                 path: data.FaceList.FaceObject[0].SubImageList.SubImageInfo.StoragePath,
-    //                 similaritydegree
-    //             }
-    //         })
-    // }
+        const url = `${faceURL}/VIID/Faces/${imageId}?SubImageType=${subImageType}`;
+        return fetch(url, {
+            method: 'GET',
+            headers: new Headers({
+                'Content-Type': 'application/json;charset=UTF-8'
+            })
+        })
+            .then(res => res.json())
+            // .then(data => ({
+            //     'FaceList': {
+            //         'FaceObject': [
+            //             {
+            //                 'FaceID': '122323333344444',
+            //                 'Name': 'zd',
+            //                 'SubImageList': {
+            //                     'SubImageInfo': {
+            //                         'ImageID': '122323333344444',
+            //                         'DeviceID': '1111',
+            //                         'Type': '11',
+            //                         'SubType': '01',
+            //                         'FileFormat': 'png',
+            //                         'Width': '11',
+            //                         'Height': '11',
+            //                         'StoragePath': 'http://127.0.0.1:9333/3,113457777'
+            //                     }
+            //                 }
+            //             }
+            //         ]
+            //     }
+            // }))
+            .then(data => {
+                return {
+                    name: data.FaceList.FaceObject[0].Name,
+                    faceId: data.FaceList.FaceObject[0].FaceID,
+                    path: data.FaceList.FaceObject[0].SubImageList.SubImageInfo.StoragePath,
+                    similaritydegree
+                }
+            })
+    }
 }

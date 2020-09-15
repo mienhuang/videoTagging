@@ -10,3 +10,9 @@ export interface ICustomData {
     maxTrackIdList: number[];
     currentTrackId: { trackId: number, id: string }[];
 }
+
+export interface IRegionInfo {
+    totalFrames: number;
+    maxTrackId: number;
+    totalRegions: number;
+}

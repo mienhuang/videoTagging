@@ -19,6 +19,12 @@
         padding: 0;
         margin-bottom: -6px;
 
+        #new-canvas,
+        #post-canvas {
+            position: absolute;
+            z-index: -1;
+        }
+
         .video-inner {
             position: relative;
 

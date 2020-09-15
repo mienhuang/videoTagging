@@ -1,0 +1,36 @@
+<div class="container">
+    <div class="title">
+        <div [class.active]="type === 'query'" (click)="toggleView('query')">
+            Query Face Result
+        </div>
+        <div [class.active]="type === 'view'" (click)="toggleView('view')">
+            View Face Result
+        </div>
+    </div>
+    <div class="content">
+        <ng-container *ngIf="type === 'query'">
+            <div class="list">
+                <div
+                    *ngFor="let face of bus.queryFaceList$ | async"
+                    class="face"
+                    (click)="chooseFace(face)"
+                >
+                    <img [src]="face.path" alt="" />
+                    <div class="face-info">{{ face.similaritydegree }}</div>
+                </div>
+            </div>
+        </ng-container>
+        <ng-container *ngIf="type === 'view'">
+            <div class="list">
+                <div
+                    *ngFor="let face of bus.viewFaceList$ | async"
+                    class="face"
+                    (click)="chooseFace(face)"
+                >
+                    <img [src]="face.path" alt="" />
+                    <div class="face-info">{{ face.similaritydegree }}</div>
+                </div>
+            </div>
+        </ng-container>
+    </div>
+</div>

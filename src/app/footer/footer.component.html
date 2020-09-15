@@ -6,8 +6,18 @@
         </div>
     </div>
     <div class="right">
-        <div class="text">Total Frames: <span class="value">1000</span></div>
-        <div class="text">Total Regions: <span class="value">1000</span></div>
-        <div class="text">Max Track ID: <span class="value">1000</span></div>
+        <ng-container *ngIf="info | async as _">
+            <!-- <div class="text">
+                Total Frames:
+                <span class="value">{{ _.totalFrames }}</span>
+            </div>
+            <div class="text">
+                Total Regions:
+                <span class="value">{{ _.totalRegions }}</span>
+            </div> -->
+            <div class="text">
+                Max Track ID: <span class="value">{{ _.maxTrackId }}</span>
+            </div>
+        </ng-container>
     </div>
 </footer>

@@ -22,6 +22,7 @@ import { MatDialogModule } from '@angular/material/dialog';
 import { MatTabsModule } from '@angular/material/tabs';
 import { MatSnackBarModule } from '@angular/material/snack-bar';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
+import { FaceSettingComponent } from './face-setting/face-setting.component';
 
 @NgModule({
     declarations: [
@@ -33,7 +34,8 @@ import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
         VideoComponent,
         SettingsDialogComponent,
         VideoFooterComponent,
-        FooterComponent
+        FooterComponent,
+        FaceSettingComponent
     ],
     imports: [
         BrowserModule,
