@@ -38,6 +38,7 @@
             }
 
             .review-container {
+                z-index: 3;
                 width: 300px;
                 background-color: var(--color-gray-c);
                 position: relative;

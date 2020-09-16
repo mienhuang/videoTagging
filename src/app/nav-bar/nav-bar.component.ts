@@ -46,4 +46,8 @@ export class NavBarComponent implements OnInit {
             console.log('The dialog was closed');
         });
     }
+
+    exportFile() {
+        this.bus.exportFile();
+    }
 }

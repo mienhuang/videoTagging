@@ -2,6 +2,7 @@ import { Injectable } from '@angular/core';
 import { BehaviorSubject, Subject, Subscription, Observable } from 'rxjs';
 import { IRegionInfo } from './models/region.model';
 import { IFace } from './models/face.model';
+import { ITag } from './models/canvas.model';
 
 @Injectable({ providedIn: 'root' })
 export class GlobalEventBusService {
@@ -25,6 +26,9 @@ export class GlobalEventBusService {
         totalRegions: 0,
         maxTrackId: 0
     });
+    private queryFaceEvent: Subject<boolean> = new Subject();
+    private labelUpdateEvent: Subject<ITag[]> = new BehaviorSubject([]);
+    private exportFileEvent: Subject<boolean> = new Subject();
 
     resize$ = this.resize.asObservable();
     videoSelected$ = this.videoSelected.asObservable();
@@ -40,8 +44,15 @@ export class GlobalEventBusService {
     queryFaceList$ = this.queryFaceList.asObservable();
     viewFaceList$ = this.viewFaceList.asObservable();
     regionInfo$ = this.regionInfo.asObservable();
+    queryFaceEvent$ = this.queryFaceEvent.asObservable();
+    labelUpdateEvent$ = this.labelUpdateEvent.asObservable();
+    exportFileEvent$ = this.exportFileEvent.asObservable();
 
-
+    constructor() {
+        const lablesText = localStorage.getItem('labels');
+        const labels = lablesText ? JSON.parse(lablesText) || [] : [];
+        this.labelUpdateEvent.next(labels);
+    }
 
 
     onResize(size: { width: number, height: number }) {
@@ -135,5 +146,17 @@ export class GlobalEventBusService {
 
     updateRegionInfo(info: IRegionInfo) {
         this.regionInfo.next(info);
+    }
+
+    queryFace() {
+        this.queryFaceEvent.next(true);
+    }
+
+    updateLabels(labels: ITag[]) {
+        this.labelUpdateEvent.next(labels);
+    }
+
+    exportFile() {
+        this.exportFileEvent.next(true);
     }
 }

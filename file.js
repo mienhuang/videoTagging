@@ -89,9 +89,9 @@ class FileService {
     }
 
     saveFileCb = (event, arg) => {
-        const { filePath, fileName } = arg.path;
+        const path = arg.path;
         const contents = arg.contents;
-        this.writeText(`${filePath}${fileName.split('.')[0]}.vt`, contents)
+        this.writeText(path, contents)
             .then(() => {
                 event.reply('file_save', 'file saved')
             });

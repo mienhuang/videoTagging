@@ -1,17 +1,23 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, OnDestroy, OnInit } from '@angular/core';
 import { GlobalEventBusService } from '../core/event-bus';
 import { MatSnackBar } from '@angular/material/snack-bar';
+import { Subscription } from 'rxjs';
 
 @Component({
     selector: 'app-header',
     templateUrl: './header.component.html',
     styleUrls: ['./header.component.scss']
 })
-export class HeaderComponent implements OnInit {
+export class HeaderComponent implements OnInit, OnDestroy {
+
+    private _sub = new Subscription();
+
     constructor(
         public eventBus: GlobalEventBusService,
         private _snackBar: MatSnackBar
-    ) { }
+    ) {
+
+    }
 
     ngOnInit(): void {
     }
@@ -44,5 +50,13 @@ export class HeaderComponent implements OnInit {
         });
 
         this.eventBus.deleteAllRegionsByTrackId(Number(trackId));
+    }
+
+    queryFace() {
+        this.eventBus.queryFace();
+    }
+
+    ngOnDestroy() {
+        this._sub.unsubscribe();
     }
 }

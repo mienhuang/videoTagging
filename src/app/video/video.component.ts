@@ -19,7 +19,7 @@ import shortid from 'shortid';
 
 import { GlobalEventBusService } from '../core/event-bus';
 import { KeyboardEventService } from '../core/keyboard-event';
-import { tap, filter, delay, switchMap, switchMapTo } from 'rxjs/operators';
+import { tap, filter, delay, switchMap, switchMapTo, take } from 'rxjs/operators';
 import { BehaviorSubject, Subscription } from 'rxjs';
 import { CanvasTools } from 'vott-ct';
 import { RegionData } from 'vott-ct/lib/js/CanvasTools/Core/RegionData';
@@ -76,13 +76,13 @@ export class VideoComponent implements OnInit, OnDestroy, OnChanges, AfterViewIn
     videoWidth = 0;
     frameHeight = 0;
     frameWidth = 0;
-    tags: ITag[] = [{ name: 'face', color: '#ff22ff' }];
     filePath: SafeUrl = '';
     normalFilePath = {
         fileName: '',
         filePath: ''
     };
 
+    private tags: ITag[] = [{ name: 'face', color: '#ff22ff' }];
     private sub = new Subscription();
     private stepLength = 1;
     private step = 0.02;
@@ -209,7 +209,7 @@ export class VideoComponent implements OnInit, OnDestroy, OnChanges, AfterViewIn
                 }),
                 switchMap(() => {
                     return this.event.saveFile({
-                        path: this.normalFilePath,
+                        path: `${this.normalFilePath.filePath}${this.normalFilePath.fileName.split('.')[0]}.vt`,
                         contents: JSON.stringify({
                             customData: this._customData,
                             frameData: this._frames
@@ -262,6 +262,30 @@ export class VideoComponent implements OnInit, OnDestroy, OnChanges, AfterViewIn
             )
             .subscribe();
 
+        const queryFaceSub = this.event.queryFaceEvent$
+            .pipe(
+                tap(() => {
+                    this.searchRegion();
+                })
+            )
+            .subscribe();
+
+        const labelsUpdateSub = this.event.labelUpdateEvent$
+            .pipe(
+                tap((labels) => {
+                    this.tags = labels;
+                })
+            )
+            .subscribe();
+
+        const exportFileSub = this.event.exportFileEvent$
+            .pipe(
+                tap(() => {
+                    this.exportFile();
+                })
+            )
+            .subscribe();
+
         this.sub.add(resizeSub);
         this.sub.add(videoSelectSub);
         this.sub.add(tagChangeSub);
@@ -275,6 +299,9 @@ export class VideoComponent implements OnInit, OnDestroy, OnChanges, AfterViewIn
         this.sub.add(deleteRegionSub);
         this.sub.add(stepLengthSub);
         this.sub.add(faceChooseSub);
+        this.sub.add(queryFaceSub);
+        this.sub.add(labelsUpdateSub);
+        this.sub.add(exportFileSub);
     }
 
     ngOnInit(): void {
@@ -861,7 +888,9 @@ export class VideoComponent implements OnInit, OnDestroy, OnChanges, AfterViewIn
         const len = regions.length;
         if (!regions || len === 0) return;
 
-        console.log(regions, 'regions')
+        console.log(regions, 'regions');
+
+        const viewFaceList: IFace[] = [];
 
         regions.forEach((region: IRegion) => {
             const loadedRegionData = CanvasHelpers.getRegionData(region);
@@ -875,9 +904,18 @@ export class VideoComponent implements OnInit, OnDestroy, OnChanges, AfterViewIn
                     this.frameHeight
                 ),
                 CanvasHelpers.getTagsDescriptor(this.tags, region, region.trackId));
+
+            if (region.faceId !== '-1') {
+                viewFaceList.push({
+                    path: region.imgPath,
+                    faceId: region.faceId
+                });
+            }
         });
 
         this.editor.RM.selectRegionById(regions[len - 1].id);
+
+        this.event.setViewFaceList(viewFaceList);
     }
 
 
@@ -1194,8 +1232,55 @@ export class VideoComponent implements OnInit, OnDestroy, OnChanges, AfterViewIn
         });
     }
 
+    private exportFile() {
+        this.message('exporting file...');
+        this.event.showLoading();
+
+        const _frames = {};
+
+        for (const key in this._frames) {
+            if (this._frames.hasOwnProperty(key)) {
+                _frames[key] = this._frames[key].map((region: IRegion) => {
+                    return {
+                        ...region,
+                        height: this.videoHeight,
+                        width: this.videoWidth,
+                        UID: region.id,
+                        x1: region.boundingBox.left,
+                        y1: region.boundingBox.top,
+                        x2: region.boundingBox.left + region.boundingBox.width,
+                        y2: region.boundingBox.top + region.boundingBox.height,
+                    };
+                });
+            }
+        }
+
+        const target = {
+            frames: _frames,
+            framerate: this.simpleRate,
+            inputTags: this.tags,
+            visitedFrames: {},
+            scd: false,
+            suggestiontype: 'copy'
+        };
+
+        this.event.saveFile({
+            path: `${this.normalFilePath.filePath}${this.normalFilePath.fileName.split('.')[0]}.json`,
+            contents: JSON.stringify(target)
+        })
+            .pipe(
+                take(1),
+                tap(() => {
+                    this.event.hideLoading();
+                })
+            )
+            .subscribe();
+    }
+
 
     public search = (region) => {
+        if (!region) return;
+
         this.updateCanvas();
         const imgURL = localStorage.getItem('imgURL') || 'http://192.168.88.156:5000';
         const imgTabIDList = localStorage.getItem('imgTL') || '1234567890';
@@ -1225,11 +1310,14 @@ export class VideoComponent implements OnInit, OnDestroy, OnChanges, AfterViewIn
 
         const url = `${imgURL}/VIAS/ImageSearchedByImagesSync`; // can be changed
         const data = {
-            'SearchID': Math.random().toString(36).split('.')[1],
-            'MaxNumRecordReturn': 10,
-            'SearchType': ImageSearchType,
-            'TabIDList': imgTabIDList, // can be changed
-            'Image': { 'EventSort': 11, 'Data': ImageFData }
+            SearchID: Math.random().toString(36).split('.')[1],
+            MaxNumRecordReturn: 10,
+            SearchType: ImageSearchType,
+            TabIDList: imgTabIDList, // can be changed
+            Image: {
+                EventSort: 11,
+                Data: ImageFData
+            }
         };
 
 
@@ -1322,7 +1410,7 @@ export class VideoComponent implements OnInit, OnDestroy, OnChanges, AfterViewIn
                     faceId: data.FaceList.FaceObject[0].FaceID,
                     path: data.FaceList.FaceObject[0].SubImageList.SubImageInfo.StoragePath,
                     similaritydegree
-                }
-            })
+                };
+            });
     }
 }

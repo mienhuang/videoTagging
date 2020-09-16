@@ -61,11 +61,21 @@
         </button>
     </div>
 
-    <div class="cell">
-        <button (click)="toggleTag('face')" mat-raised-button color="primary">
-            face
-        </button>
-    </div>
+    <ng-container>
+        <div
+            *ngFor="let label of eventBus.labelUpdateEvent$ | async"
+            class="cell"
+        >
+            <button
+                (click)="toggleTag(label.name)"
+                mat-raised-button
+                [style.background-color]="label.color"
+            >
+                {{ label.name }}
+            </button>
+        </div>
+    </ng-container>
+
     <div class="cell">
         <label>
             Search:
@@ -92,6 +102,11 @@
             (click)="deleteAll(search.value)"
         >
             Delete All
+        </button>
+    </div>
+    <div class="cell">
+        <button mat-raised-button color="primary" (click)="queryFace()">
+            Query Face
         </button>
     </div>
 </div>

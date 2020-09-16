@@ -1,6 +1,6 @@
 export interface IFace {
-    name: string;
+    name?: string;
     path: string;
-    similaritydegree: number;
+    similaritydegree?: number;
     faceId: string;
 }
