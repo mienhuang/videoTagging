@@ -125,7 +125,7 @@ export class VideoComponent implements OnInit, OnDestroy, OnChanges, AfterViewIn
                     this.frameWidth = this.video.clientWidth;
 
                     this.editor.AS.resize(this.frameWidth, this.frameHeight);
-                })5
+                })
             )
             .subscribe();
         const videoSelectSub = this.event.videoSelected$
