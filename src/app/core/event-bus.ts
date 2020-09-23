@@ -19,7 +19,7 @@ export class GlobalEventBusService {
     private searchRegion: Subject<number> = new Subject();
     private currentStepLength: Subject<number> = new Subject();
     private faceChooseEvent: Subject<IFace> = new Subject();
-    private queryFaceList: Subject<IFace[]> = new BehaviorSubject([]);
+    private queryFaceList: BehaviorSubject<IFace[]> = new BehaviorSubject([]);
     private viewFaceList: Subject<IFace[]> = new BehaviorSubject([]);
     private regionInfo: BehaviorSubject<IRegionInfo> = new BehaviorSubject({
         totalFrames: 0,
@@ -29,6 +29,8 @@ export class GlobalEventBusService {
     private queryFaceEvent: Subject<boolean> = new Subject();
     private labelUpdateEvent: Subject<ITag[]> = new BehaviorSubject([]);
     private exportFileEvent: Subject<boolean> = new Subject();
+
+    private frameRateUpdate: BehaviorSubject<number> = new BehaviorSubject(50);
 
     resize$ = this.resize.asObservable();
     videoSelected$ = this.videoSelected.asObservable();
@@ -47,6 +49,7 @@ export class GlobalEventBusService {
     queryFaceEvent$ = this.queryFaceEvent.asObservable();
     labelUpdateEvent$ = this.labelUpdateEvent.asObservable();
     exportFileEvent$ = this.exportFileEvent.asObservable();
+    frameRateUpdate$ = this.frameRateUpdate.asObservable();
 
     constructor() {
         const lablesText = localStorage.getItem('labels');
@@ -60,7 +63,6 @@ export class GlobalEventBusService {
     }
 
     selectVideo(file) {
-        console.log(file, '-------')
         this.videoSelected.next({
             name: file.name,
             src: file.path
@@ -158,5 +160,9 @@ export class GlobalEventBusService {
 
     exportFile() {
         this.exportFileEvent.next(true);
+    }
+
+    updateFrameRate(rate: number) {
+        this.frameRateUpdate.next(rate);
     }
 }

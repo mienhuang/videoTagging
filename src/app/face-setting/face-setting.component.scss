@@ -60,6 +60,21 @@
                 margin: 6px 4px;
                 transition: all 0.5s;
 
+                &.view {
+                    border-width: 2px;
+                    border-style: solid;
+                    position: relative;
+
+                    .track-Id {
+                        position: absolute;
+                        top: 0;
+                        left: 0;
+                        padding: 2px;
+                        text-align: center;
+                        min-width: 20px;
+                    }
+                }
+
                 &:hover {
                     box-shadow: 0px 3px 5px var(--color-gray-a);
                     transform: translateY(-4px);

@@ -16,7 +16,9 @@
                     (click)="chooseFace(face)"
                 >
                     <img [src]="face.path" alt="" />
-                    <div class="face-info">{{ face.similaritydegree }}</div>
+                    <div class="face-info">
+                        {{ (face.similaritydegree * 100).toFixed(2) }}%
+                    </div>
                 </div>
             </div>
         </ng-container>
@@ -24,11 +26,16 @@
             <div class="list">
                 <div
                     *ngFor="let face of bus.viewFaceList$ | async"
-                    class="face"
-                    (click)="chooseFace(face)"
+                    class="face view"
+                    [style.border-color]="face.tag.color"
                 >
                     <img [src]="face.path" alt="" />
-                    <div class="face-info">{{ face.similaritydegree }}</div>
+                    <div class="face-info">
+                        {{ (face.similaritydegree * 100).toFixed(2) }}%
+                    </div>
+                    <div [style.background]="face.tag.color" class="track-Id">
+                        {{ face.trackId }}
+                    </div>
                 </div>
             </div>
         </ng-container>

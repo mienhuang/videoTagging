@@ -2,23 +2,54 @@
     <mat-tab label="System Settings">
         <div class="system-settings">
             <div class="cell">
-                <label for="frame-rate">
-                    Frame Rate:
-                </label>
-                <input id="frame-rate" [value]="frameRate" type="number" min="0" max="60">
-                <button class="update" mat-raised-button color="primary">Update</button>
-                <span class="warn">update frame rate will clean all the data for current video</span>
+                <label for="frame-rate"> Frame Rate: </label>
+                <input
+                    #rate
+                    id="frame-rate"
+                    [value]="frameRate"
+                    type="number"
+                    min="0"
+                    max="60"
+                />
+                <button
+                    class="update"
+                    (click)="updateFrameRate(rate.value)"
+                    mat-raised-button
+                    color="primary"
+                >
+                    Update
+                </button>
+                <span class="warn"
+                    >update frame rate will clean all the data for current
+                    video</span
+                >
             </div>
             <div class="cell">
-                <label for="labes">
-                    Labels:
-                </label>
-                <input id="labes" [value]="labelValue" (change)="updateLabel($event)" class="frame-rate" type="text">
-                <button class="update" mat-raised-button color="primary" (click)="addLabel()">Add</button>
+                <label for="labes"> Labels: </label>
+                <input
+                    id="labes"
+                    [value]="labelValue"
+                    (change)="updateLabel($event)"
+                    class="frame-rate"
+                    type="text"
+                />
+                <button
+                    class="update"
+                    mat-raised-button
+                    color="primary"
+                    (click)="addLabel()"
+                >
+                    Add
+                </button>
 
                 <div class="labels">
                     <div *ngFor="let label of labels; index as i" class="label">
-                        <button mat-raised-button [style.background]="label.color">{{label.name}}</button>
+                        <button
+                            mat-raised-button
+                            [style.background]="label.color"
+                        >
+                            {{ label.name }}
+                        </button>
                         <div class="close" (click)="removeLabel(i)">+</div>
                     </div>
                 </div>
@@ -30,31 +61,20 @@
             <div class="">
                 <h3>Image Query Server Settings</h3>
                 <div class="cell">
-                    <label for="image-address">
-                        Address:
-                    </label>
-                    <input id="image-address" type="text">
+                    <label for="image-address"> Address: </label>
+                    <input
+                        id="image-address"
+                        (change)="addressChange($event)"
+                        type="text"
+                    />
                 </div>
                 <div class="cell">
-                    <label for="image-tab-list">
-                        TabIDList:
-                    </label>
-                    <input id="image-tab-list" type="text">
-                </div>
-            </div>
-            <div class="">
-                <h3>FaceId Query Server Settings</h3>
-                <div class="cell">
-                    <label for="faceid-address">
-                        Address:
-                    </label>
-                    <input id="faceid-address" type="text">
-                </div>
-                <div class="cell">
-                    <label for="sub-image-type">
-                        SubImageType:
-                    </label>
-                    <input id="sub-image-type" type="text">
+                    <label for="image-tab-list"> TabIDList: </label>
+                    <input
+                        id="image-tab-list"
+                        (change)="tabIdChange($event)"
+                        type="text"
+                    />
                 </div>
             </div>
         </div>

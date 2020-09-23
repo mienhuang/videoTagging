@@ -39,6 +39,7 @@ import { IRegion } from '../core/models/canvas.model';
 import { ICustomData } from '../core/models/region.model';
 import { MatSnackBar } from '@angular/material/snack-bar';
 import { IFace } from '../core/models/face.model';
+import { SSL_OP_DONT_INSERT_EMPTY_FRAGMENTS } from 'constants';
 
 
 @Component({
@@ -59,7 +60,7 @@ export class VideoComponent implements OnInit, OnDestroy, OnChanges, AfterViewIn
     @ViewChild('container') container: ElementRef;
     @ViewChild('videoContainer') videoContainer: ElementRef;
     @Output() currentTimeChange = new EventEmitter();
-    @Input() simpleRate = 50;
+    @Input() sampleRate = 50;
 
     isStartedPlay = false;
     isPlaying = false;
@@ -116,7 +117,15 @@ export class VideoComponent implements OnInit, OnDestroy, OnChanges, AfterViewIn
             .pipe(
                 tap(({ width, height }) => {
                     this.width.next(width - 360);
-                })
+                }),
+                filter(() => Boolean(this.video)),
+                delay(100),
+                tap(() => {
+                    this.frameHeight = this.video.clientHeight;
+                    this.frameWidth = this.video.clientWidth;
+
+                    this.editor.AS.resize(this.frameWidth, this.frameHeight);
+                })5
             )
             .subscribe();
         const videoSelectSub = this.event.videoSelected$
@@ -150,6 +159,9 @@ export class VideoComponent implements OnInit, OnDestroy, OnChanges, AfterViewIn
                 tap(() => {
                     this.event.hideLoading();
                     this.cdr.markForCheck();
+                }),
+                tap(() => {
+                    this.initVideo();
                 })
             )
             .subscribe();
@@ -286,6 +298,16 @@ export class VideoComponent implements OnInit, OnDestroy, OnChanges, AfterViewIn
             )
             .subscribe();
 
+        const frameRateSub = this.event.frameRateUpdate$
+            .pipe(
+                tap((rate: number) => {
+                    this.sampleRate = rate;
+
+                    this.resetAll();
+                })
+            )
+            .subscribe();
+
         this.sub.add(resizeSub);
         this.sub.add(videoSelectSub);
         this.sub.add(tagChangeSub);
@@ -302,12 +324,16 @@ export class VideoComponent implements OnInit, OnDestroy, OnChanges, AfterViewIn
         this.sub.add(queryFaceSub);
         this.sub.add(labelsUpdateSub);
         this.sub.add(exportFileSub);
+        this.sub.add(frameRateSub);
     }
 
     ngOnInit(): void {
         this.getContainerSize();
         const fileName = localStorage.getItem('fileName');
         const filePath = localStorage.getItem('filePath');
+
+        if (!fileName || !filePath) return;
+
         this.normalFilePath = {
             fileName,
             filePath
@@ -321,6 +347,13 @@ export class VideoComponent implements OnInit, OnDestroy, OnChanges, AfterViewIn
                     const { customData, frameData } = JSON.parse(data);
                     this._customData = customData;
                     this._frames = frameData;
+                }),
+                tap(() => {
+                    this.event.updateRegionInfo({
+                        totalFrames: 0,
+                        totalRegions: 0,
+                        maxTrackId: this._customData.maxTrackId
+                    });
                 }),
                 tap(() => {
                     this.event.hideLoading();
@@ -347,7 +380,7 @@ export class VideoComponent implements OnInit, OnDestroy, OnChanges, AfterViewIn
     }
 
     ngAfterViewInit() {
-        this.addCTEditor();
+        // this.addCTEditor();
         // editor.addToolbar(toolbarContainer, CanvasTools.Editor.FullToolbarSet, '../../assets/icons');
     }
 
@@ -379,7 +412,7 @@ export class VideoComponent implements OnInit, OnDestroy, OnChanges, AfterViewIn
     play() {
         if (!this.video) return;
 
-        console.log('calllllllll')
+        this.removeUntagRegion();
 
         this.isStartedPlay = true;
         this.isPlaying = true;
@@ -433,6 +466,10 @@ export class VideoComponent implements OnInit, OnDestroy, OnChanges, AfterViewIn
     }
 
     seekTo(time: number) {
+        if (!this.video) return;
+
+        this.removeUntagRegion();
+
         this.seekTime = time;
         this.pasue();
         this.video.currentTime = this.seekTime;
@@ -477,6 +514,7 @@ export class VideoComponent implements OnInit, OnDestroy, OnChanges, AfterViewIn
         this.videoWidth = this.video.videoWidth;
         this.frameHeight = this.video.clientHeight;
         this.frameWidth = this.video.clientWidth;
+        this.addCTEditor();
     }
 
     updateCanvas() {
@@ -504,8 +542,8 @@ export class VideoComponent implements OnInit, OnDestroy, OnChanges, AfterViewIn
     }
 
     ngOnChanges(changes: SimpleChanges) {
-        if (changes.simpleRate && this.simpleRate > 0) {
-            this.step = 1 / this.simpleRate;
+        if (changes.sampleRate && this.sampleRate > 0) {
+            this.step = 1 / this.sampleRate;
         }
     }
 
@@ -521,6 +559,7 @@ export class VideoComponent implements OnInit, OnDestroy, OnChanges, AfterViewIn
 
     private message(message: string) {
         this._snackBar.open(message, 'Notice', {
+            verticalPosition: 'top',
             duration: 3000,
         });
     }
@@ -554,6 +593,17 @@ export class VideoComponent implements OnInit, OnDestroy, OnChanges, AfterViewIn
         }
     }
 
+    private removeUntagRegion() {
+        const index = this.frameIndex;
+
+        const regions = (this._frames[index] || []).filter((region: IRegion) => region.tags.length === 0);
+        const copy = JSON.parse(JSON.stringify(regions));
+
+        copy.forEach((region) => {
+            this.updateMaxTrackId(region, 'delete');
+        });
+    }
+
     private updateFrameIndex(index: number) {
         this.frameIndex = index;
         this.refreshCanvasToolsRegions();
@@ -571,14 +621,16 @@ export class VideoComponent implements OnInit, OnDestroy, OnChanges, AfterViewIn
     private addCTEditor() {
 
         const editorContainer = document.getElementById('editorDiv') as HTMLDivElement;
-        const toolbarContainer = document.getElementById('toolbarDiv');
+        // const toolbarContainer = document.getElementById('toolbarDiv');
 
         this.editor = new CanvasTools.Editor(editorContainer).api;
-        this.editor.autoResize = false;
+        this.editor.autoResize = true;
         this.editor.onSelectionEnd = this.onSelectionEnd;
         this.editor.onRegionMoveEnd = this.onRegionMoveEnd;
         this.editor.onRegionDelete = this.onRegionDelete;
         this.editor.onRegionSelected = this.onRegionSelected;
+        this.editor.AS.resize(this.frameWidth, this.frameHeight);
+
         // this.editor.AS.setSelectionMode({ mode: SelectionMode });
     }
 
@@ -903,12 +955,17 @@ export class VideoComponent implements OnInit, OnDestroy, OnChanges, AfterViewIn
                     this.frameWidth,
                     this.frameHeight
                 ),
-                CanvasHelpers.getTagsDescriptor(this.tags, region, region.trackId));
+                CanvasHelpers.getTagsDescriptor(this.tags, region, region.trackId)
+            );
 
             if (region.faceId !== '-1') {
                 viewFaceList.push({
                     path: region.imgPath,
-                    faceId: region.faceId
+                    faceId: region.faceId,
+                    trackId: region.trackId,
+                    tag: this.tags.find(tag => {
+                        return region.tags[0] === tag.name;
+                    })
                 });
             }
         });
@@ -920,6 +977,8 @@ export class VideoComponent implements OnInit, OnDestroy, OnChanges, AfterViewIn
 
 
     private clearAllRegions = () => {
+        if (!this.editor) return;
+
         this.editor.RM.deleteAllRegions();
     }
 
@@ -1094,7 +1153,7 @@ export class VideoComponent implements OnInit, OnDestroy, OnChanges, AfterViewIn
         });
 
         const targetRegion = sortedRegions[0];
-        const frameSkipTime: number = (1 / this.simpleRate);
+        const frameSkipTime: number = (1 / this.sampleRate);
         this.seekTo((targetRegion.frameIndex - 1) * frameSkipTime);
     }
 
@@ -1176,7 +1235,7 @@ export class VideoComponent implements OnInit, OnDestroy, OnChanges, AfterViewIn
         const len = sortedRegions.length;
         const index = sortedRegions.findIndex(region => region.id === id);
         if (index === -1) return;
-        const frameSkipTime: number = (1 / this.simpleRate);
+        const frameSkipTime: number = (1 / this.sampleRate);
         switch (type) {
             case 'first':
                 this.seekTo((sortedRegions[0].frameIndex - 1) * frameSkipTime);
@@ -1217,7 +1276,15 @@ export class VideoComponent implements OnInit, OnDestroy, OnChanges, AfterViewIn
     // TODO
 
     private setFaceId = ({ faceId, path }: IFace) => {
-        const trackId = this.getSelectedRegions()[0].trackId;
+        const targetRegion = this.getSelectedRegions()[0];
+
+        if (!targetRegion) {
+            this.message('Please select one region first.');
+
+            return;
+        }
+
+        const trackId = targetRegion.trackId;
         const regions = this._customData.regions[trackId];
         regions.forEach((region: IRegion) => {
             region.faceId = faceId;
@@ -1230,6 +1297,8 @@ export class VideoComponent implements OnInit, OnDestroy, OnChanges, AfterViewIn
                 }
             });
         });
+
+        this.message('Set face ID finished.');
     }
 
     private exportFile() {
@@ -1257,7 +1326,7 @@ export class VideoComponent implements OnInit, OnDestroy, OnChanges, AfterViewIn
 
         const target = {
             frames: _frames,
-            framerate: this.simpleRate,
+            framerate: this.sampleRate,
             inputTags: this.tags,
             visitedFrames: {},
             scd: false,
@@ -1277,14 +1346,32 @@ export class VideoComponent implements OnInit, OnDestroy, OnChanges, AfterViewIn
             .subscribe();
     }
 
+    private resetAll() {
+        this._customData = {
+            maxTrackId: 0,
+            regions: [],
+            maxTrackIdList: [0],
+            currentTrackId: []
+        };
 
-    public search = (region) => {
+        this._frames = {};
+        this.clearAllRegions();
+    }
+
+
+    private search = (region) => {
         if (!region) return;
 
         this.updateCanvas();
-        const imgURL = localStorage.getItem('imgURL') || 'http://192.168.88.156:5000';
-        const imgTabIDList = localStorage.getItem('imgTL') || '1234567890';
-        console.log(region, 'called search..');
+        const imgURL = localStorage.getItem('imgURL');
+        const imgTabIDList = localStorage.getItem('imgTL');
+
+        if (!imgURL || !imgTabIDList) {
+            this.message('Please set server information correctlly!');
+
+            return;
+        }
+
         const { tags, boundingBox: { height, width, left: x, top: y } } = region;
         const sourceCanvas = document.querySelector('#post-canvas') as HTMLCanvasElement;
         const newCanvas = document.getElementById('new-canvas') as HTMLCanvasElement;
@@ -1308,20 +1395,23 @@ export class VideoComponent implements OnInit, OnDestroy, OnChanges, AfterViewIn
             return word.substring(0, 1).toUpperCase() + word.substring(1);
         });
 
-        const url = `${imgURL}/VIAS/ImageSearchedByImagesSync`; // can be changed
         const data = {
-            SearchID: Math.random().toString(36).split('.')[1],
-            MaxNumRecordReturn: 10,
-            SearchType: ImageSearchType,
-            TabIDList: imgTabIDList, // can be changed
-            Image: {
-                EventSort: 11,
-                Data: ImageFData
+            ImageSearchedByImageObject: {
+                SearchID: Math.random().toString(36).split('.')[1],
+                MaxNumRecordReturn: 5,
+                Threshold: .6,
+                TabIDList: imgTabIDList, // can be changed
+                ResultImageDeclare: '1',
+                ResultFeatureDeclare: -1,
+                SearchType: ImageSearchType,
+                Image: {
+                    Data: ImageFData
+                }
             }
         };
 
 
-        fetch(url, {
+        fetch(imgURL, {
             method: 'POST',
             body: JSON.stringify(data),
             headers: new Headers({
@@ -1329,88 +1419,24 @@ export class VideoComponent implements OnInit, OnDestroy, OnChanges, AfterViewIn
             })
         })
             .then(res => res.json())
-            // .then(() => {
-            //     return {
-            //         'ImageResultSBI': {
-            //             'SearchID': 'your SearchID',
-            //             'ReturnNum': 2,
-            //             'TotalNum': 2,
-            //             'FaceObjectList': {
-            //                 'FaceObject': [
-            //                     {
-            //                         'FaceID': '123123',
-            //                         'TabID': '00000000000000000000050000001000000000001',
-            //                         'Similaritydegree': 0.123
-            //                     },
-            //                     {
-            //                         'FaceID': '234434',
-            //                         'TabID': '00000000000000000000050000001000000000001',
-            //                         'Similaritydegree': 0.023
-            //                     }
-            //                 ]
-            //             }
-            //         }
-            //     };
-            // })
-            .then(response => response.ImageResultSBI.FaceObjectList.FaceObject)
-            .then(list => this.queryAllFaceInfo(list))
+            .then(response => response.ImageResultSBIObject.FaceObjectList.FaceObject)
+            .then(list => this.postQueryFaceResult(list))
             // .then(data => this.props.queryFaceCb(data))
             .catch(error => console.error('Error:', error))
             .then(response => console.log('Success:', response));
 
     }
 
-    queryAllFaceInfo = (list: {
-        FaceID: string,
-        TabID: string,
-        Similaritydegree: number
-    }[]) => {
-        return Promise.all(
-            list.map(face => this.getImageById(face.FaceID, face.Similaritydegree))
-        );
-    }
+    private postQueryFaceResult(list) {
+        const faces = list.map(item => {
+            return {
+                name: item.IDNumber,
+                path: item.SubImageList.SubImageInfoObject[0].StoragePath,
+                similaritydegree: item.Similaritydegree,
+                faceId: item.FaceID
+            };
+        });
 
-    getImageById = (imageId, similaritydegree: number) => {
-        const faceURL = localStorage.getItem('faceURL') || 'http://127.0.0.1:8080';
-        const subImageType = localStorage.getItem('subImageType') || '02';
-
-        const url = `${faceURL}/VIID/Faces/${imageId}?SubImageType=${subImageType}`;
-        return fetch(url, {
-            method: 'GET',
-            headers: new Headers({
-                'Content-Type': 'application/json;charset=UTF-8'
-            })
-        })
-            .then(res => res.json())
-            // .then(data => ({
-            //     'FaceList': {
-            //         'FaceObject': [
-            //             {
-            //                 'FaceID': '122323333344444',
-            //                 'Name': 'zd',
-            //                 'SubImageList': {
-            //                     'SubImageInfo': {
-            //                         'ImageID': '122323333344444',
-            //                         'DeviceID': '1111',
-            //                         'Type': '11',
-            //                         'SubType': '01',
-            //                         'FileFormat': 'png',
-            //                         'Width': '11',
-            //                         'Height': '11',
-            //                         'StoragePath': 'http://127.0.0.1:9333/3,113457777'
-            //                     }
-            //                 }
-            //             }
-            //         ]
-            //     }
-            // }))
-            .then(data => {
-                return {
-                    name: data.FaceList.FaceObject[0].Name,
-                    faceId: data.FaceList.FaceObject[0].FaceID,
-                    path: data.FaceList.FaceObject[0].SubImageList.SubImageInfo.StoragePath,
-                    similaritydegree
-                };
-            });
+        this.event.setQueryFaceList(faces);
     }
 }

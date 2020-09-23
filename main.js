@@ -1,23 +1,36 @@
 const { app, BrowserWindow, ipcMain, Menu } = require('electron');
-
+const path = require('path');
+const url = require('url');
 const fileService = require('./file');
 
 function createWindow() {
     // 创建浏览器窗口
     const win = new BrowserWindow({
-        width: 800,
-        height: 600,
+        width: 1360,
+        height: 760,
         minHeight: 760,
         minWidth: 1360,
+        // fullscreen: true,
         // resizable: false,
+        // simpleFullscreen: true,
+        // webPreferences: {
+        //     nodeIntegration: true,
+        //     webSecurity: false
+        // }
         webPreferences: {
             nodeIntegration: true,
-            webSecurity: false
+            webSecurity: false,
+            preload: path.join(__dirname, 'preload.js')
         }
     })
 
     // 并且为你的应用加载index.html
     win.loadURL('http://localhost:4200')
+    // win.loadURL(url.format({
+    //     pathname: path.join(__dirname, '/dist/videoTagging/index.html'),
+    //     protocol: 'file:',
+    //     slashes: true
+    // }));
     win.maximize();
 
     // 打开开发者工具

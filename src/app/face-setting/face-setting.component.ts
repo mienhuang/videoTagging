@@ -11,30 +11,12 @@ import { IFace } from '../core/models/face.model';
 export class FaceSettingComponent implements OnInit {
 
     type = 'query';
-    queryFaceList: IFace[] = [
-        {
-            name: 'test1',
-            faceId: '111',
-            path: '../../assets/face.png',
-            similaritydegree: 0.1
-        },
-    ];
-    viewFaceList: IFace[] = [
-        {
-            name: 'test2',
-            faceId: '222',
-            path: '../../assets/face.png',
-            similaritydegree: 0.2
-        },
-        {
-            name: 'test3',
-            faceId: '333',
-            path: '../../assets/face.png',
-            similaritydegree: 0.3
-        },
-    ];
+    queryFaceList: IFace[] = [];
+    viewFaceList: IFace[] = [];
 
-    constructor(public bus: GlobalEventBusService) { }
+    constructor(public bus: GlobalEventBusService) {
+
+    }
 
     ngOnInit(): void {
     }

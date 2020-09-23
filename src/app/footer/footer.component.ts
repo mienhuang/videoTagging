@@ -23,7 +23,7 @@ export class FooterComponent implements OnInit, OnDestroy {
     constructor(
         private keyboard: KeyboardEventService,
         private cdr: ChangeDetectorRef,
-        private event: GlobalEventBusService
+        public event: GlobalEventBusService
     ) {
         const upDownSub = merge(
             this.keyboard.arrowUp$.pipe(

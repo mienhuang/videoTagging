@@ -1,6 +1,6 @@
 <footer>
     <div class="left">
-        <div class="text">Simple Rate: <span class="value">50</span></div>
+        <div class="text">Simple Rate: <span class="value">{{event.frameRateUpdate$ | async}}</span></div>
         <div class="text">
             Step Length: <span class="value">{{ stepLegth }}</span>
         </div>
