@@ -116,7 +116,7 @@ export class VideoComponent implements OnInit, OnDestroy, OnChanges, AfterViewIn
         const resizeSub = this.event.resize$
             .pipe(
                 tap(({ width, height }) => {
-                    this.width.next(width - 360);
+                    this.updateVideoSize(width);
                 }),
                 filter(() => Boolean(this.video)),
                 delay(100),
@@ -555,6 +555,18 @@ export class VideoComponent implements OnInit, OnDestroy, OnChanges, AfterViewIn
         this.video.removeEventListener('seeking', this.onSeeking);
         this.video.removeEventListener('durationchange ', this.onDurationChange);
         this.video.removeEventListener('seeked', this.afterSeeked);
+    }
+
+    private updateVideoSize(width: number) {
+        if (!this.video) return;
+
+        const { clientHeight: ch, clientWidth: cw } = this.container.nativeElement;
+        const targetWidth = width - 360;
+        const { videoHeight: vch, videoWidth: vcw } = this.video;
+
+        const maxWidth = ((ch - 38) * vcw) / vch;
+        console.log(targetWidth, maxWidth, 'maxWidthmaxWidth', vch, vcw, ch)
+        this.width.next(targetWidth < maxWidth ? targetWidth : maxWidth);
     }
 
     private message(message: string) {
