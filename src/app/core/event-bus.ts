@@ -3,6 +3,7 @@ import { BehaviorSubject, Subject, Subscription, Observable } from 'rxjs';
 import { IRegionInfo } from './models/region.model';
 import { IFace } from './models/face.model';
 import { ITag } from './models/canvas.model';
+import { timeStamp } from 'console';
 
 @Injectable({ providedIn: 'root' })
 export class GlobalEventBusService {
@@ -29,6 +30,7 @@ export class GlobalEventBusService {
     private queryFaceEvent: Subject<boolean> = new Subject();
     private labelUpdateEvent: Subject<ITag[]> = new BehaviorSubject([]);
     private exportFileEvent: Subject<boolean> = new Subject();
+    private videoTimeEvent: BehaviorSubject<string> = new BehaviorSubject('00:00:00');
 
     private frameRateUpdate: BehaviorSubject<number> = new BehaviorSubject(50);
 
@@ -50,6 +52,7 @@ export class GlobalEventBusService {
     labelUpdateEvent$ = this.labelUpdateEvent.asObservable();
     exportFileEvent$ = this.exportFileEvent.asObservable();
     frameRateUpdate$ = this.frameRateUpdate.asObservable();
+    videTimeEvent$ = this.videoTimeEvent.asObservable();
 
     constructor() {
         const lablesText = localStorage.getItem('labels');
@@ -164,5 +167,9 @@ export class GlobalEventBusService {
 
     updateFrameRate(rate: number) {
         this.frameRateUpdate.next(rate);
+    }
+
+    updateVideTime(time: string) {
+        this.videoTimeEvent.next(time);
     }
 }

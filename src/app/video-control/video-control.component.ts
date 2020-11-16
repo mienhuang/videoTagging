@@ -10,7 +10,7 @@ declare const videojs: any;
     templateUrl: './video-control.component.html',
     styleUrls: ['./video-control.component.scss']
 })
-export class VideoControlComponent implements OnInit, OnDestroy, AfterViewInit {
+export class VideoControlComponent implements OnDestroy {
 
     @ViewChild('container') container: ElementRef;
     @ViewChild('player') player: ElementRef;
@@ -18,71 +18,35 @@ export class VideoControlComponent implements OnInit, OnDestroy, AfterViewInit {
     tagStyle = `height:0;width:0; top:0;left:0;`;
 
     private sub = new Subscription();
+    private videoInfo = {};
 
     constructor(private event: GlobalEventBusService) {
-        // const resizeSub = this.event.resize$
-        //     .pipe(
-        //         tap(() => {
-        //             const ele = this.container.nativeElement;
-
-        //             const height = this.container.nativeElement.offsetHeight;
-        //             const width = this.container.nativeElement.offsetWidth;
-
-        //             console.log(height, width);
-        //             this.tagStyle = `height:${height}px; width: ${width}px; top: 0; left: 0;`;
-        //         })
-        //     )
-        //     .subscribe();
-
-        // this.sub.add(resizeSub);
     }
 
+    onVideoTimeChange({ current, total }) {
+        console.log(current, total, 'eeee');
 
-    ngOnInit(): void {
-        // const options = {
-        //     resizeManager: true
-        // };
+        const t = this.getVideoTime(Math.floor(total));
+        const c = this.getVideoTime(Math.floor(current));
 
-        // const player = videojs('player', options, function onPlayerReady() {
-        //     videojs.log('Your player is ready!');
-
-        //     // In this context, `this` is the player that was created by Video.js.
-        //     //   this.play();
-
-        //     // How about an event listener?
-        //     this.on('ended', () => {
-        //         videojs.log('Awww...over so soon?!');
-        //     });
-        // });
-
-        // const myButton = player.controlBar.addChild('button', {
-        //     text: 'Press me',
-        //     // other options
-        // });
-
-        // myButton.addClass('html-classname');
-
-
+        this.event.updateVideTime(`${c} : ${t}`);
     }
 
-    ngAfterViewInit() {
-        // this.renderTagContainer();
-        // const video = document.querySelector('video');
-        // console.log(video.offsetHeight, video.offsetWidth, video.offsetTop, video.offsetLeft)
+    private getVideoTime(t: number) {
+        const s = (t % 60 + '').padStart(2, '0');
+        const h = (Math.floor(t / 3600) + '').padStart(2, '0');
+        const m = (Math.floor((t / 60) % 60) + '').padStart(2, '0');
+
+        return `${h}:${m}:${s}`;
     }
 
-    private renderTagContainer() {
-        const ele = this.player.nativeElement;
-
-        const height = ele.offsetHeight;
-        const width = ele.offsetWidth;
-
-        console.log(height, width);
-        this.tagStyle = `height:${height}px; width: ${width}px; top: 0; left: 0;`;
+    onVideoInformationChange(info) {
+        this.videoInfo = info;
     }
-
 
     ngOnDestroy() {
         this.sub.unsubscribe();
     }
+
+    private timeMap(time) { }
 }

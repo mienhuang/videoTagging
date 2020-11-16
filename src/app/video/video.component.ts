@@ -39,7 +39,6 @@ import { IRegion } from '../core/models/canvas.model';
 import { ICustomData } from '../core/models/region.model';
 import { MatSnackBar } from '@angular/material/snack-bar';
 import { IFace } from '../core/models/face.model';
-import { SSL_OP_DONT_INSERT_EMPTY_FRAGMENTS } from 'constants';
 
 
 @Component({
@@ -59,7 +58,8 @@ export class VideoComponent implements OnInit, OnDestroy, OnChanges, AfterViewIn
 
     @ViewChild('container') container: ElementRef;
     @ViewChild('videoContainer') videoContainer: ElementRef;
-    @Output() currentTimeChange = new EventEmitter();
+    @Output() currentTimeChange: EventEmitter<{ current: number, total: number }> = new EventEmitter();
+    @Output() videoInformation = new EventEmitter();
     @Input() sampleRate = 50;
 
     isStartedPlay = false;
@@ -82,6 +82,7 @@ export class VideoComponent implements OnInit, OnDestroy, OnChanges, AfterViewIn
         fileName: '',
         filePath: ''
     };
+    videoTime = '00:00:00 / 00:00:00';
 
     private tags: ITag[] = [{ name: 'face', color: '#ff22ff' }];
     private sub = new Subscription();
@@ -477,7 +478,14 @@ export class VideoComponent implements OnInit, OnDestroy, OnChanges, AfterViewIn
         this.currentTime = this.video.currentTime;
         this.progressValue.next((this.currentTime / this.duration) * this.progressMaxValue);
         this.checkFrameIndex();
-        this.currentTimeChange.emit(this.video.currentTime);
+        this.currentTimeChange.emit({
+            current: this.video.currentTime,
+            total: this.video.duration
+        });
+        this.setVideoTime({
+            current: this.video.currentTime,
+            total: this.video.duration
+        });
     }
 
     mute() {
@@ -503,7 +511,7 @@ export class VideoComponent implements OnInit, OnDestroy, OnChanges, AfterViewIn
     }
 
     readyToPlay = () => {
-        console.log('can play', this)
+        console.log('can play', this);
 
         this.video.muted = true;
         this.video.volume = 0;
@@ -514,6 +522,14 @@ export class VideoComponent implements OnInit, OnDestroy, OnChanges, AfterViewIn
         this.videoWidth = this.video.videoWidth;
         this.frameHeight = this.video.clientHeight;
         this.frameWidth = this.video.clientWidth;
+
+        this.videoInformation.emit({
+            duration: this.duration,
+            videoHeight: this.videoHeight,
+            videoWidth: this.videoWidth,
+            frameHeight: this.frameHeight,
+            frameWidth: this.frameWidth
+        });
         this.addCTEditor();
     }
 
@@ -565,7 +581,7 @@ export class VideoComponent implements OnInit, OnDestroy, OnChanges, AfterViewIn
         const { videoHeight: vch, videoWidth: vcw } = this.video;
 
         const maxWidth = ((ch - 38) * vcw) / vch;
-        console.log(targetWidth, maxWidth, 'maxWidthmaxWidth', vch, vcw, ch)
+        console.log(targetWidth, maxWidth, 'maxWidthmaxWidth', vch, vcw, ch);
         this.width.next(targetWidth < maxWidth ? targetWidth : maxWidth);
     }
 
@@ -583,7 +599,7 @@ export class VideoComponent implements OnInit, OnDestroy, OnChanges, AfterViewIn
 
     private afterSeeked = (event) => {
         // this.play();
-        console.log('seeked...')
+        console.log('seeked...');
         this.currentTime = this.seekTime;
         this.checkFrameIndex();
     }
@@ -593,13 +609,35 @@ export class VideoComponent implements OnInit, OnDestroy, OnChanges, AfterViewIn
             this.currentTime = this.video.currentTime;
             this.progressValue.next((this.currentTime / this.duration) * this.progressMaxValue);
             this.checkFrameIndex();
-            this.currentTimeChange.emit(this.video.currentTime);
+            this.currentTimeChange.emit({
+                current: this.video.currentTime,
+                total: this.video.duration
+            });
+            this.setVideoTime({
+                current: this.video.currentTime,
+                total: this.video.duration
+            });
         }, 50);
+    }
+
+    private setVideoTime({ current, total }) {
+        const t = this.getVideoTime(Math.floor(total));
+        const c = this.getVideoTime(Math.floor(current));
+
+        this.videoTime = `${c} / ${t}`;
+    }
+
+    private getVideoTime(t: number) {
+        const s = (t % 60 + '').padStart(2, '0');
+        const h = (Math.floor(t / 3600) + '').padStart(2, '0');
+        const m = (Math.floor((t / 60) % 60) + '').padStart(2, '0');
+
+        return `${h}:${m}:${s}`;
     }
 
     private checkFrameIndex() {
         const target = Math.ceil((this.currentTime - this.videoStartTime) / this.step) + 1;
-        console.log(this.currentTime, target, this.frameIndex, 'this.frameIndex')
+        console.log(this.currentTime, target, this.frameIndex, 'this.frameIndex');
         if (target !== this.frameIndex) {
             this.updateFrameIndex(target);
         }
@@ -700,7 +738,7 @@ export class VideoComponent implements OnInit, OnDestroy, OnChanges, AfterViewIn
 
         this.editor.RM.selectRegionById(id);
 
-        console.log(this._customData, 'cccccccccccccc')
+        console.log(this._customData, 'cccccccccccccc');
     }
 
     private updateRegion(region: IRegion) {
@@ -710,7 +748,7 @@ export class VideoComponent implements OnInit, OnDestroy, OnChanges, AfterViewIn
     }
 
     private onRegionMoveEnd = (id: string, regionData: RegionData) => {
-        console.log('callde onRegionMoveEnd')
+        console.log('callde onRegionMoveEnd');
         // const currentRegions = this.state.currentAsset.regions;
         const currentRegions = this._frames[this.frameIndex] || [];
         const movedRegionIndex = currentRegions.findIndex((region) => region.id === id);
@@ -748,7 +786,7 @@ export class VideoComponent implements OnInit, OnDestroy, OnChanges, AfterViewIn
 
 
     private onRegionDelete = (id: string) => {
-        console.log('callde onRegionDelete')
+        console.log('callde onRegionDelete');
         // Remove from Canvas Tools
         this.editor.RM.deleteRegionById(id);
 
@@ -843,7 +881,7 @@ export class VideoComponent implements OnInit, OnDestroy, OnChanges, AfterViewIn
             maxTrackIdList: [...currentMaxTrackIdList],
             currentTrackId: newState.currentTrackId
         };
-        console.log(this._customData, '_customDataDecrease')
+        console.log(this._customData, '_customDataDecrease');
     }
 
     private _customDataIncrease(newData) {
@@ -877,7 +915,7 @@ export class VideoComponent implements OnInit, OnDestroy, OnChanges, AfterViewIn
             currentTrackId: newState.currentTrackId
         };
 
-        console.log(this._customData, '_customDataIncrease')
+        console.log(this._customData, '_customDataIncrease');
     }
 
 
