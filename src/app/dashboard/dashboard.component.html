@@ -3,22 +3,7 @@
         <app-nav-bar></app-nav-bar>
     </div>
     <div class="content">
-        <header>
-            <app-header></app-header>
-        </header>
-        <div class="inner">
-            <div class="video-container">
-                <div class="video">
-                    <app-video-control></app-video-control>
-                </div>
-                <div class="footer">
-                    <!-- <app-video-footer></app-video-footer> -->
-                </div>
-            </div>
-            <div class="review-container">
-                <app-face-setting></app-face-setting>
-            </div>
-        </div>
+        <router-outlet></router-outlet>
         <app-footer></app-footer>
     </div>
 </div>

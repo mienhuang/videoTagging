@@ -1,31 +1,37 @@
 <div class="container">
     <div class="menu">
-        <div class="cell" (click)="import.click()">
+        <div class="cell" [class.active]="currentRoute === 'video'" (click)="navigate('video')">
             <svg>
-                <use xlink:href="#import"></use>
-            </svg>
-            <input
-                #import
-                class="import"
-                type="file"
-                (change)="selectVideo($event)"
-                accept="video/mp4"
-            />
-        </div>
-        <div class="cell" (click)="saveFile()">
-            <svg>
-                <use xlink:href="#save"></use>
+                <use href="#video-import"></use>
             </svg>
         </div>
-        <div class="cell export" (click)="exportFile()">
+        <div class="cell" [class.active]="currentRoute === 'picture'" (click)="navigate('picture')">
             <svg>
-                <use xlink:href="#export"></use>
+                <use href="#picture-import"></use>
             </svg>
         </div>
     </div>
     <div class="settings" (click)="openDialog()">
-        <svg>
-            <use xlink:href="#settings"></use>
-        </svg>
+        <div class="cell" (click)="import.click()">
+            <svg>
+                <use href="#import"></use>
+            </svg>
+            <input #import class="import" type="file" (change)="selectVideo($event)" accept="video/mp4" />
+        </div>
+        <div class="cell" (click)="saveFile()">
+            <svg>
+                <use href="#save"></use>
+            </svg>
+        </div>
+        <div class="cell export" (click)="exportFile()">
+            <svg>
+                <use href="#export"></use>
+            </svg>
+        </div>
+        <div class="cell">
+            <svg>
+                <use href="#settings"></use>
+            </svg>
+        </div>
     </div>
 </div>

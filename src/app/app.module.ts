@@ -23,6 +23,9 @@ import { MatTabsModule } from '@angular/material/tabs';
 import { MatSnackBarModule } from '@angular/material/snack-bar';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { FaceSettingComponent } from './face-setting/face-setting.component';
+import { OverlayComponent } from './overlay/overlay.component';
+import { VideoMarkerComponent } from './video-marker/video-marker.component';
+import { PictureMarkerComponent } from './picture-marker/picture-marker.component';
 
 @NgModule({
     declarations: [
@@ -35,7 +38,10 @@ import { FaceSettingComponent } from './face-setting/face-setting.component';
         SettingsDialogComponent,
         VideoFooterComponent,
         FooterComponent,
-        FaceSettingComponent
+        FaceSettingComponent,
+        OverlayComponent,
+        VideoMarkerComponent,
+        PictureMarkerComponent,
     ],
     imports: [
         BrowserModule,
@@ -48,10 +54,9 @@ import { FaceSettingComponent } from './face-setting/face-setting.component';
         MatDialogModule,
         MatTabsModule,
         MatSnackBarModule,
-        MatProgressSpinnerModule
+        MatProgressSpinnerModule,
     ],
-    providers: [
-    ],
-    bootstrap: [AppComponent]
+    providers: [],
+    bootstrap: [AppComponent],
 })
-export class AppModule { }
+export class AppModule {}

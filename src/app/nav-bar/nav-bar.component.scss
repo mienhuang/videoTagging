@@ -3,10 +3,25 @@
     display: flex;
     flex-direction: column;
 
+    .cell {
+        cursor: pointer;
+        height: 60px;
+        width: 60px;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+
+        &.active {
+            svg {
+                fill: var(--color-white);
+            }
+        }
+    }
+
     svg {
         height: 26px;
         width: 26px;
-        fill: var(--color-gray-c);
+        fill: var(--color-gray-6);
 
         &:hover {
             fill: var(--color-white);
@@ -21,6 +36,14 @@
     }
     .menu {
         flex: 1;
+    }
+
+    .settings {
+        cursor: pointer;
+        height: 240px;
+        width: 60px;
+        text-align: center;
+        padding-top: 10px;
 
         .import {
             height: 0;
@@ -28,21 +51,5 @@
             visibility: hidden;
             background-color: transparent;
         }
-        .cell {
-            cursor: pointer;
-            height: 60px;
-            width: 60px;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-        }
-    }
-
-    .settings {
-        cursor: pointer;
-        height: 40px;
-        width: 60px;
-        text-align: center;
-        padding-top: 10px;
     }
 }

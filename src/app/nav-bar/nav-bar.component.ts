@@ -3,23 +3,30 @@ import { GlobalEventBusService } from '../core/event-bus';
 import { MatDialog, MatDialogRef, MAT_DIALOG_DATA } from '@angular/material/dialog';
 import { SettingsDialogComponent } from '../settings-dialog/settings-dialog.component';
 import { KeyboardEventService } from '../core/keyboard-event';
+import { Router } from '@angular/router';
 
 @Component({
     selector: 'app-nav-bar',
     templateUrl: './nav-bar.component.html',
-    styleUrls: ['./nav-bar.component.scss']
+    styleUrls: ['./nav-bar.component.scss'],
 })
 export class NavBarComponent implements OnInit {
+    public currentRoute = 'video';
 
     constructor(
         private bus: GlobalEventBusService,
         public dialog: MatDialog,
-        private keyboard: KeyboardEventService
-    ) { }
+        private keyboard: KeyboardEventService,
+        private router: Router
+    ) {}
 
     @ViewChild('import') import: ElementRef;
 
-    ngOnInit(): void {
+    ngOnInit(): void {}
+
+    navigate(url: string) {
+        this.currentRoute = url;
+        this.router.navigate([url]);
     }
 
     selectVideo(event) {
@@ -39,10 +46,10 @@ export class NavBarComponent implements OnInit {
         const dialogRef = this.dialog.open(SettingsDialogComponent, {
             width: '800px',
             height: '600px',
-            data: {}
+            data: {},
         });
 
-        dialogRef.afterClosed().subscribe(result => {
+        dialogRef.afterClosed().subscribe((result) => {
             console.log('The dialog was closed');
         });
     }

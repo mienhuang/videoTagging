@@ -12,6 +12,8 @@
     --color-gray-c: #ccc;
     --color-gray-d: #ddd;
     --color-gray-e: #eee;
+    --color-gray-8: #888;
+    --color-gray-6: #666;
     --color-gray-51: rgb(51, 51, 51);
     --color-warn: #f44336;
     --color-purpole: #673ab7;
@@ -43,6 +45,7 @@ input[type="number"] {
 .CanvasToolsEditor {
     padding: 0 !important;
     height: 100% !important;
+    width: 100% !important;
 
     canvas {
         background-color: transparent !important;

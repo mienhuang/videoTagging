@@ -12,7 +12,8 @@
         "e2e": "ng e2e",
         "pack": "ng build  --prod --base-href ./ && electron-builder",
         "electron-build": "ng build  --prod --base-href ./ && electron .",
-        "electron-package": "electron-packager . FarmhubCompanyDashboard --platform=win32 --arch=x64"
+        "electron-package": "electron-packager . FarmhubCompanyDashboard --platform=win32 --arch=x64",
+        "g": "ng g c picture-marker"
     },
     "build": {
         "appId": "com.mien.mien",
