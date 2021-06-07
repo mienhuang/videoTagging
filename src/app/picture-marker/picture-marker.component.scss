@@ -1,4 +1,45 @@
-:host{
+:host {
     display: flex;
     flex: 1;
+}
+
+.picture-marker-container {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+
+    .marking-area {
+        height: calc(100vh - 76px);
+        width: calc(100vw - 60px);
+        position: relative;
+        display: flex;
+
+        .picture-full-size {
+            position: absolute;
+            z-index: -1;
+            opacity: 0;
+        }
+
+        .picture-hoster {
+            flex: 1;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .picture-div-hoster {
+            background-color: rgba(100, 100, 100, 0.2);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            margin: auto;
+            height: 100% !important;
+            width: 100% !important;
+        }
+    }
 }

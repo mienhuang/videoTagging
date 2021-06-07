@@ -1,5 +1,6 @@
 import { BrowserModule } from '@angular/platform-browser';
 import { NgModule } from '@angular/core';
+import { FormsModule, ReactiveFormsModule } from '@angular/forms';
 
 import { AppRoutingModule } from './app-routing.module';
 
@@ -22,10 +23,14 @@ import { MatDialogModule } from '@angular/material/dialog';
 import { MatTabsModule } from '@angular/material/tabs';
 import { MatSnackBarModule } from '@angular/material/snack-bar';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
+import { MatFormFieldModule } from '@angular/material/form-field';
+import { MatAutocompleteModule } from '@angular/material/autocomplete';
+import { MatInputModule } from '@angular/material/input';
 import { FaceSettingComponent } from './face-setting/face-setting.component';
 import { OverlayComponent } from './overlay/overlay.component';
 import { VideoMarkerComponent } from './video-marker/video-marker.component';
 import { PictureMarkerComponent } from './picture-marker/picture-marker.component';
+import { PictureHeaderComponent } from './picture-header/picture-header.component';
 
 @NgModule({
     declarations: [
@@ -42,6 +47,7 @@ import { PictureMarkerComponent } from './picture-marker/picture-marker.componen
         OverlayComponent,
         VideoMarkerComponent,
         PictureMarkerComponent,
+        PictureHeaderComponent,
     ],
     imports: [
         BrowserModule,
@@ -55,6 +61,11 @@ import { PictureMarkerComponent } from './picture-marker/picture-marker.componen
         MatTabsModule,
         MatSnackBarModule,
         MatProgressSpinnerModule,
+        MatAutocompleteModule,
+        MatFormFieldModule,
+        MatInputModule,
+        FormsModule,
+        ReactiveFormsModule,
     ],
     providers: [],
     bootstrap: [AppComponent],

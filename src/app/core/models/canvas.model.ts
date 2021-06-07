@@ -16,19 +16,16 @@ export interface IAsset {
     predicted?: boolean;
 }
 
-
 export interface IAssetMetadata {
     asset: IAsset;
     regions: IRegion[];
     version: string;
 }
 
-
 export interface ISize {
     width: number;
     height: number;
 }
-
 
 export interface IRegion {
     id: string;
@@ -41,6 +38,14 @@ export interface IRegion {
     keyFrame?: boolean;
     frameIndex?: number;
     imgPath?: string;
+}
+
+export interface IPictureRegion {
+    id: string;
+    type: RegionType;
+    tags: string[];
+    points?: IPoint[];
+    boundingBox?: IBoundingBox;
 }
 
 export interface ICustomRegion {
@@ -57,7 +62,6 @@ export interface ICustomRegion {
     imgPath?: string;
 }
 
-
 export interface IBoundingBox {
     left: number;
     top: number;
@@ -65,12 +69,10 @@ export interface IBoundingBox {
     height: number;
 }
 
-
 export interface IPoint {
     x: number;
     y: number;
 }
-
 
 export enum AssetType {
     Unknown = 0,
@@ -80,13 +82,11 @@ export enum AssetType {
     TFRecord = 4,
 }
 
-
 export enum AssetState {
     NotVisited = 0,
     Visited = 1,
     Tagged = 2,
 }
-
 
 export enum RegionType {
     Polyline = 'POLYLINE',

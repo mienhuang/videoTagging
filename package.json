@@ -13,7 +13,7 @@
         "pack": "ng build  --prod --base-href ./ && electron-builder",
         "electron-build": "ng build  --prod --base-href ./ && electron .",
         "electron-package": "electron-packager . FarmhubCompanyDashboard --platform=win32 --arch=x64",
-        "g": "ng g c picture-marker"
+        "g": "ng g c picture-header"
     },
     "build": {
         "appId": "com.mien.mien",
@@ -49,6 +49,7 @@
         "@angular/platform-browser-dynamic": "~9.0.6",
         "@angular/router": "~9.0.6",
         "@types/snapsvg": "^0.5.0",
+        "image-size": "^1.0.0",
         "rxjs": "~6.5.4",
         "shortid": "^2.2.15",
         "tslib": "^1.10.0",

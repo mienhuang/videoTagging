@@ -4,10 +4,12 @@ import { IRegionInfo } from './models/region.model';
 import { IFace } from './models/face.model';
 import { ITag } from './models/canvas.model';
 import { timeStamp } from 'console';
+import { IFile, IFolder, IPictureInfo } from './models/picture.model';
+import { map, tap } from 'rxjs/operators';
+import { ISaveFile } from './models/file.model';
 
 @Injectable({ providedIn: 'root' })
 export class GlobalEventBusService {
-
     ipcRenderer = (window as any).require('electron').ipcRenderer;
     private resize = new Subject();
     private videoSelected = new Subject();
@@ -25,14 +27,18 @@ export class GlobalEventBusService {
     private regionInfo: BehaviorSubject<IRegionInfo> = new BehaviorSubject({
         totalFrames: 0,
         totalRegions: 0,
-        maxTrackId: 0
+        maxTrackId: 0,
     });
     private queryFaceEvent: Subject<boolean> = new Subject();
     private labelUpdateEvent: Subject<ITag[]> = new BehaviorSubject([]);
+    private pictureLabelEvent: Subject<ITag[]> = new BehaviorSubject([]);
     private exportFileEvent: Subject<boolean> = new Subject();
     private videoTimeEvent: BehaviorSubject<string> = new BehaviorSubject('00:00:00');
 
     private frameRateUpdate: BehaviorSubject<number> = new BehaviorSubject(50);
+    private selectPictureProject: Subject<IFolder> = new Subject();
+    private pictureLables: Subject<ITag[]> = new Subject();
+    private pictureIndexOffset: Subject<number> = new Subject();
 
     resize$ = this.resize.asObservable();
     videoSelected$ = this.videoSelected.asObservable();
@@ -50,9 +56,13 @@ export class GlobalEventBusService {
     regionInfo$ = this.regionInfo.asObservable();
     queryFaceEvent$ = this.queryFaceEvent.asObservable();
     labelUpdateEvent$ = this.labelUpdateEvent.asObservable();
+    pictureLabelEvent$ = this.pictureLabelEvent.asObservable();
     exportFileEvent$ = this.exportFileEvent.asObservable();
     frameRateUpdate$ = this.frameRateUpdate.asObservable();
     videTimeEvent$ = this.videoTimeEvent.asObservable();
+    selectPictureProject$ = this.selectPictureProject.asObservable();
+    pictureLables$ = this.pictureLables.asObservable();
+    pictureIndexOffset$ = this.pictureIndexOffset.asObservable();
 
     constructor() {
         const lablesText = localStorage.getItem('labels');
@@ -60,15 +70,18 @@ export class GlobalEventBusService {
         this.labelUpdateEvent.next(labels);
     }
 
+    setPictureLabels(lables: ITag[]) {
+        this.pictureLables.next(lables);
+    }
 
-    onResize(size: { width: number, height: number }) {
+    onResize(size: { width: number; height: number }) {
         this.resize.next(size);
     }
 
     selectVideo(file) {
         this.videoSelected.next({
             name: file.name,
-            src: file.path
+            src: file.path,
         });
     }
 
@@ -77,7 +90,9 @@ export class GlobalEventBusService {
     }
 
     newTrackId(id: number) {
-        if (isNaN(id)) { return; }
+        if (isNaN(id)) {
+            return;
+        }
 
         this.newTrackIdSeted.next(id);
     }
@@ -87,18 +102,20 @@ export class GlobalEventBusService {
     }
 
     setCurrentTrackId(id: number) {
-        if (isNaN(id)) { return; }
+        if (isNaN(id)) {
+            return;
+        }
 
         this.currentTrackId.next(id);
     }
 
-    saveFile(data: any): Observable<any> {
+    saveFile(data: ISaveFile): Observable<any> {
         const _ = new Subject();
 
         this.ipcRenderer.on('file_save', (event, arg) => {
             _.next(arg);
         });
-        this.ipcRenderer.send('save_file', data);
+        this.ipcRenderer.send('save_file', JSON.stringify(data));
 
         return _;
     }
@@ -111,7 +128,24 @@ export class GlobalEventBusService {
         });
 
         this.ipcRenderer.send('read_file', {
-            path, name
+            path,
+            name,
+        });
+
+        return _;
+    }
+
+    readPictureProjectOrCreate(path: string, name: string, files: IPictureInfo[]): Observable<any> {
+        const _ = new Subject();
+
+        this.ipcRenderer.on('file_read', (event, arg) => {
+            _.next(arg);
+        });
+
+        this.ipcRenderer.send('read_pictures', {
+            path,
+            name,
+            files,
         });
 
         return _;
@@ -171,5 +205,17 @@ export class GlobalEventBusService {
 
     updateVideTime(time: string) {
         this.videoTimeEvent.next(time);
+    }
+
+    setSelectedPcitures(folder: IFolder) {
+        this.selectPictureProject.next(folder);
+    }
+
+    setPictureRecentLabels(labels: ITag[]) {
+        this.pictureLabelEvent.next(labels);
+    }
+
+    updatePictureIndex(offset: number) {
+        this.pictureIndexOffset.next(offset);
     }
 }

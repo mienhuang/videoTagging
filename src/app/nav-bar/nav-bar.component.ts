@@ -1,14 +1,17 @@
-import { Component, OnInit, ViewChild, ElementRef } from '@angular/core';
+import { Component, OnInit, ViewChild, ElementRef, ChangeDetectionStrategy } from '@angular/core';
 import { GlobalEventBusService } from '../core/event-bus';
-import { MatDialog, MatDialogRef, MAT_DIALOG_DATA } from '@angular/material/dialog';
+import { MatDialog } from '@angular/material/dialog';
 import { SettingsDialogComponent } from '../settings-dialog/settings-dialog.component';
 import { KeyboardEventService } from '../core/keyboard-event';
-import { Router } from '@angular/router';
+import { NavigationEnd, Router, RouterEvent } from '@angular/router';
+import { filter, tap } from 'rxjs/operators';
+import { IPictureInfo } from '../core/models/picture.model';
 
 @Component({
     selector: 'app-nav-bar',
     templateUrl: './nav-bar.component.html',
     styleUrls: ['./nav-bar.component.scss'],
+    changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class NavBarComponent implements OnInit {
     public currentRoute = 'video';
@@ -18,7 +21,25 @@ export class NavBarComponent implements OnInit {
         public dialog: MatDialog,
         private keyboard: KeyboardEventService,
         private router: Router
-    ) {}
+    ) {
+        this.router.events
+            .pipe(
+                filter((e: RouterEvent) => e instanceof NavigationEnd),
+                tap(({ url }: NavigationEnd) => {
+                    switch (url) {
+                        case '/picture':
+                            this.currentRoute = 'picture';
+                            break;
+                        case '/video':
+                            this.currentRoute = 'video';
+                            break;
+                        default:
+                            break;
+                    }
+                })
+            )
+            .subscribe();
+    }
 
     @ViewChild('import') import: ElementRef;
 
@@ -36,6 +57,38 @@ export class NavBarComponent implements OnInit {
         this.bus.selectVideo(file);
 
         this.import.nativeElement.value = null;
+    }
+
+    selectFolder(event: any) {
+        console.log(event, 'event');
+        const files = event.target.files;
+
+        const infoList: IPictureInfo[] = [];
+
+        for (const file of files) {
+            const { name, path, type } = file;
+            if (type === 'image/png' || type === 'image/jpeg') {
+                infoList.push({
+                    name,
+                    path,
+                });
+            }
+        }
+
+        if (infoList.length === 0) {
+            return;
+        }
+
+        const folderPath = infoList[0].path.split(infoList[0].name)[0];
+
+        console.log(infoList, 'infoList', infoList[0].path.split(infoList[0].name));
+
+        this.bus.setSelectedPcitures({
+            folder: folderPath,
+            pictures: infoList,
+        });
+
+        console.log(event);
     }
 
     saveFile() {

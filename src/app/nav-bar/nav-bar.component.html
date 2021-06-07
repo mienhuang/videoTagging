@@ -11,12 +11,18 @@
             </svg>
         </div>
     </div>
-    <div class="settings" (click)="openDialog()">
-        <div class="cell" (click)="import.click()">
+    <div class="settings">
+        <div *ngIf="currentRoute === 'video'" class="cell" (click)="import.click()">
             <svg>
                 <use href="#import"></use>
             </svg>
             <input #import class="import" type="file" (change)="selectVideo($event)" accept="video/mp4" />
+        </div>
+        <div *ngIf="currentRoute === 'picture'" class="cell" (click)="importFolder.click()">
+            <svg>
+                <use href="#import"></use>
+            </svg>
+            <input #importFolder class="import" type="file" webkitdirectory directory (change)="selectFolder($event)" />
         </div>
         <div class="cell" (click)="saveFile()">
             <svg>
@@ -28,7 +34,7 @@
                 <use href="#export"></use>
             </svg>
         </div>
-        <div class="cell">
+        <div class="cell" (click)="openDialog()">
             <svg>
                 <use href="#settings"></use>
             </svg>

@@ -1,0 +1,41 @@
+<div class="container">
+    <div class="cell">
+        <form class="example-form">
+            <mat-form-field class="example-full-width">
+                <input type="text" matInput [formControl]="pictureLabelControl" [matAutocomplete]="auto" />
+                <mat-autocomplete #auto="matAutocomplete" [displayWith]="displayFn">
+                    <mat-option *ngFor="let option of filteredOptions | async" [value]="option">
+                        {{ option.name }}
+                    </mat-option>
+                </mat-autocomplete>
+            </mat-form-field>
+        </form>
+    </div>
+    <div class="cell">
+        <button mat-stroked-button color="primary" (click)="setTag()">Set Tag</button>
+    </div>
+
+    <div class="cell">
+        <button mat-stroked-button color="primary" title="Previous Key Frame" (click)="changePicture(-1)">
+            <svg>
+                <use xlink:href="#single-left-arrow"></use>
+            </svg>
+        </button>
+    </div>
+
+    <div class="cell">
+        <button mat-stroked-button color="primary" title="Next Key Frame" (click)="changePicture(1)">
+            <svg class="right">
+                <use xlink:href="#single-left-arrow"></use>
+            </svg>
+        </button>
+    </div>
+
+    <ng-container>
+        <div *ngFor="let label of eventBus.pictureLabelEvent$ | async" class="cell">
+            <button (click)="toggleTag(label.name)" mat-raised-button [style.background-color]="label.color">
+                {{ label.name }}
+            </button>
+        </div>
+    </ng-container>
+</div>

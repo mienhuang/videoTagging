@@ -1,4 +1,4 @@
-import { Component, OnInit, OnDestroy } from '@angular/core';
+import { Component, OnInit, OnDestroy, ChangeDetectionStrategy } from '@angular/core';
 import { fromEvent, Subscription } from 'rxjs';
 import { tap } from 'rxjs/operators';
 import { GlobalEventBusService } from '../core/event-bus';
@@ -7,7 +7,8 @@ import { GlobalEventBusService } from '../core/event-bus';
 @Component({
     selector: 'app-dashboard',
     templateUrl: './dashboard.component.html',
-    styleUrls: ['./dashboard.component.scss']
+    styleUrls: ['./dashboard.component.scss'],
+    changeDetection: ChangeDetectionStrategy.OnPush
 })
 export class DashboardComponent implements OnInit, OnDestroy {
 

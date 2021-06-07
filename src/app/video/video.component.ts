@@ -26,7 +26,7 @@ import { RegionData } from 'vott-ct/lib/js/CanvasTools/Core/RegionData';
 
 import { EditorMode, RegionType, ITag } from '../core/models/canvas.model';
 
-import CanvasHelpers from './canvasHelpers';
+import CanvasHelpers from '../core/canvasHelpers';
 
 import { Editor } from 'vott-ct/lib/js/CanvasTools/CanvasTools.Editor';
 // import Clipboard from '../../../../common/clipboard';
@@ -218,10 +218,10 @@ export class VideoComponent implements OnInit, OnDestroy, OnChanges, AfterViewIn
                 switchMap(() => {
                     return this.event.saveFile({
                         path: `${this.normalFilePath.filePath}${this.normalFilePath.fileName.split('.')[0]}.vt`,
-                        contents: JSON.stringify({
+                        contents: {
                             customData: this._customData,
                             frameData: this._frames,
-                        }),
+                        },
                     });
                 }),
                 tap(() => {
@@ -386,7 +386,7 @@ export class VideoComponent implements OnInit, OnDestroy, OnChanges, AfterViewIn
 
         this.height = ele.offsetHeight;
         this.width.next(ele.offsetWidth);
-    }
+    };
 
     startPlay() {
         if (!this.video) return;
@@ -504,7 +504,7 @@ export class VideoComponent implements OnInit, OnDestroy, OnChanges, AfterViewIn
 
         this.stopPlay();
         this.cdr.markForCheck();
-    }
+    };
 
     readyToPlay = () => {
         console.log('can play', this);
@@ -527,7 +527,7 @@ export class VideoComponent implements OnInit, OnDestroy, OnChanges, AfterViewIn
             frameWidth: this.frameWidth,
         });
         this.addCTEditor();
-    }
+    };
 
     updateCanvas() {
         const canvas = document.querySelector('#post-canvas') as HTMLCanvasElement;
@@ -546,7 +546,7 @@ export class VideoComponent implements OnInit, OnDestroy, OnChanges, AfterViewIn
         const src = canvas.toDataURL('image/jpeg', 1.0);
         // output.appendChild(img);
         // this.video.setAttribute('poster', src);
-    }
+    };
 
     searchRegion() {
         const region = this.getSelectedRegions()[0];
@@ -610,14 +610,14 @@ export class VideoComponent implements OnInit, OnDestroy, OnChanges, AfterViewIn
     private onSeeking = (event) => {
         console.log(event, 'seeee');
         // TOTO show loading when seeking
-    }
+    };
 
     private afterSeeked = (event) => {
         // this.play();
         console.log('seeked...');
         this.currentTime = this.seekTime;
         this.checkFrameIndex();
-    }
+    };
 
     private onPlaying() {
         this.currentTimeId = setInterval(() => {
@@ -681,7 +681,7 @@ export class VideoComponent implements OnInit, OnDestroy, OnChanges, AfterViewIn
     private onDurationChange = (event) => {
         console.log(event, 'duration change');
         // this.duration = event;
-    }
+    };
 
     private onSelectionEnd = (regionData: RegionData) => {
         if (CanvasHelpers.isEmpty(regionData)) {
@@ -736,7 +736,7 @@ export class VideoComponent implements OnInit, OnDestroy, OnChanges, AfterViewIn
         this.editor.RM.selectRegionById(id);
 
         console.log(this._customData, 'cccccccccccccc');
-    }
+    };
 
     private updateRegion(region: IRegion) {
         const description = CanvasHelpers.getTagsDescriptor(this.tags, region, region.trackId);
@@ -778,7 +778,7 @@ export class VideoComponent implements OnInit, OnDestroy, OnChanges, AfterViewIn
         // this.props.onRegionMoved(movedRegion, movedRegion.trackId);
         this.updateRegion(movedRegion);
         this.updateRegionsBetweenKeyFrames(movedRegion, movedRegion.trackId);
-    }
+    };
 
     private onRegionDelete = (id: string) => {
         console.log('callde onRegionDelete');
@@ -796,7 +796,7 @@ export class VideoComponent implements OnInit, OnDestroy, OnChanges, AfterViewIn
 
         const latest = [...currentRegions].pop();
         this.onSelectedRegionsChanged(latest ? [latest] : []);
-    }
+    };
 
     private onRegionSelected = (id: string, multiSelect: boolean) => {
         console.log(id, 'id in onRegionSelected');
@@ -807,7 +807,7 @@ export class VideoComponent implements OnInit, OnDestroy, OnChanges, AfterViewIn
         console.log(id, 'select region', selectedRegions);
 
         this.onSelectedRegionsChanged(selectedRegions);
-    }
+    };
 
     private editorModeToType = (editorMode: EditorMode) => {
         let type;
@@ -829,7 +829,7 @@ export class VideoComponent implements OnInit, OnDestroy, OnChanges, AfterViewIn
                 break;
         }
         return type;
-    }
+    };
 
     private updateMaxTrackId = async (region: IRegion, type: string) => {
         console.log(region, 'update max track id', type);
@@ -848,7 +848,7 @@ export class VideoComponent implements OnInit, OnDestroy, OnChanges, AfterViewIn
             maxTrackId: this._customData.maxTrackId,
         });
         // this.refreshCanvasToolsRegions();
-    }
+    };
 
     private _customDataDecrease(newData) {
         const newState = this._customData as ICustomData;
@@ -942,7 +942,7 @@ export class VideoComponent implements OnInit, OnDestroy, OnChanges, AfterViewIn
         if (!selectedRegions[0]) return;
 
         this.event.setCurrentTrackId(selectedRegions[0].trackId);
-    }
+    };
 
     private getSelectedRegions = (): IRegion[] => {
         const selectedRegions = this.editor.RM.getSelectedRegions().map((rb) => rb.id);
@@ -950,7 +950,7 @@ export class VideoComponent implements OnInit, OnDestroy, OnChanges, AfterViewIn
         const currentRegions = this._frames[this.frameIndex] || [];
         // return this.state.currentAsset.regions.filter((r) => selectedRegions.find((id) => r.id === id));
         return currentRegions.filter((r) => selectedRegions.find((id) => r.id === id));
-    }
+    };
 
     private updateRegions = (updates: IRegion[]) => {
         // INFO: update Regions
@@ -964,14 +964,14 @@ export class VideoComponent implements OnInit, OnDestroy, OnChanges, AfterViewIn
         }
 
         this.updateCanvasToolsRegionTags();
-    }
+    };
 
     private updateCanvasToolsRegionTags = (): void => {
         const currentRegions = this._frames[this.frameIndex] || [];
         for (const region of currentRegions) {
             this.editor.RM.updateTagsById(region.id, CanvasHelpers.getTagsDescriptor(this.tags, region, region.trackId));
         }
-    }
+    };
 
     private refreshCanvasToolsRegions = () => {
         // console.log('called refreshCanvasToolsRegions', this.props.frameIndex)
@@ -1013,13 +1013,13 @@ export class VideoComponent implements OnInit, OnDestroy, OnChanges, AfterViewIn
         this.editor.RM.selectRegionById(regions[len - 1].id);
 
         this.event.setViewFaceList(viewFaceList);
-    }
+    };
 
     private clearAllRegions = () => {
         if (!this.editor) return;
 
         this.editor.RM.deleteAllRegions();
-    }
+    };
 
     public applyTag = (tag: string) => {
         const selectedRegions = this.getSelectedRegions();
@@ -1049,7 +1049,7 @@ export class VideoComponent implements OnInit, OnDestroy, OnChanges, AfterViewIn
         this.updateRegions(selectedRegions);
 
         this.onSelectedRegionsChanged(selectedRegions);
-    }
+    };
 
     public updateMaxtrackId(region: IRegion) {
         const tagLen = region.tags.length;
@@ -1076,7 +1076,7 @@ export class VideoComponent implements OnInit, OnDestroy, OnChanges, AfterViewIn
 
     public updateRegionsBetweenKeyFrames = (copy: IRegion, trackId: number) => {
         this.insertRegions(trackId, { ...copy });
-    }
+    };
 
     private insertRegions = (trackId: number, newRegion: IRegion) => {
         const trackIdGroup: IRegion[] = [
@@ -1150,7 +1150,7 @@ export class VideoComponent implements OnInit, OnDestroy, OnChanges, AfterViewIn
             }
             // toast.success('成功绘制到下一关键帧');
         }
-    }
+    };
 
     private generatePoints = (boundingBox: { height: number; left: number; top: number; width: number }): { x: number; y: number }[] => {
         return [
@@ -1159,7 +1159,7 @@ export class VideoComponent implements OnInit, OnDestroy, OnChanges, AfterViewIn
             { x: boundingBox.left + boundingBox.width, y: boundingBox.top + boundingBox.height },
             { x: boundingBox.left, y: boundingBox.top + boundingBox.height },
         ];
-    }
+    };
 
     private generateBoxs = (
         startBoundingBox: { height: number; left: number; top: number; width: number },
@@ -1180,7 +1180,7 @@ export class VideoComponent implements OnInit, OnDestroy, OnChanges, AfterViewIn
             });
         }
         return boxs;
-    }
+    };
 
     private searchRegionByTrackId(trackId: number) {
         const regions: IRegion[] = this._customData.regions[trackId] || [];
@@ -1220,11 +1220,11 @@ export class VideoComponent implements OnInit, OnDestroy, OnChanges, AfterViewIn
 
     private findPreviousKeyFrame = (index: number, regions: IRegion[]): IRegion => {
         return this.findKeyFrame(index, -1, regions, -1);
-    }
+    };
 
     private findNextKeyFrame = (index: number, regions: IRegion[], len: number): IRegion => {
         return this.findKeyFrame(index, 1, regions, len);
-    }
+    };
 
     private findKeyFrame = (start: number, step: number, regions: IRegion[], stop: number): IRegion => {
         let i = start;
@@ -1241,7 +1241,7 @@ export class VideoComponent implements OnInit, OnDestroy, OnChanges, AfterViewIn
             }
         }
         return cRegion;
-    }
+    };
 
     private updateFrameRegion = async (region: IRegion): Promise<void> => {
         // const assetService = new AssetService(this.props.project);
@@ -1257,7 +1257,7 @@ export class VideoComponent implements OnInit, OnDestroy, OnChanges, AfterViewIn
         this.updateMaxTrackId(region, 'add');
         const removeSame = [...regions].filter((r) => r.trackId !== region.trackId);
         this._frames[region.frameIndex] = [...removeSame, region];
-    }
+    };
 
     private moveToFrame(type: string) {
         console.log(type, 'moveToFrame ========', this._customData);
@@ -1302,13 +1302,13 @@ export class VideoComponent implements OnInit, OnDestroy, OnChanges, AfterViewIn
             return regions[index - 1];
         }
         return this.findPrevious(regions, index - 1);
-    }
+    };
     private findNext = (regions, index) => {
         if (regions[index + 1].keyFrame) {
             return regions[index + 1];
         }
         return this.findNext(regions, index + 1);
-    }
+    };
 
     // TODO
 
@@ -1336,7 +1336,7 @@ export class VideoComponent implements OnInit, OnDestroy, OnChanges, AfterViewIn
         });
 
         this.message('Set face ID finished.');
-    }
+    };
 
     private exportFile() {
         this.message('exporting file...');
@@ -1373,7 +1373,7 @@ export class VideoComponent implements OnInit, OnDestroy, OnChanges, AfterViewIn
         this.event
             .saveFile({
                 path: `${this.normalFilePath.filePath}${this.normalFilePath.fileName.split('.')[0]}.json`,
-                contents: JSON.stringify(target),
+                contents: target,
             })
             .pipe(
                 take(1),
@@ -1463,7 +1463,7 @@ export class VideoComponent implements OnInit, OnDestroy, OnChanges, AfterViewIn
             // .then(data => this.props.queryFaceCb(data))
             .catch((error) => console.error('Error:', error))
             .then((response) => console.log('Success:', response));
-    }
+    };
 
     private postQueryFaceResult(list) {
         const faces = list.map((item) => {

@@ -1,0 +1,44 @@
+.container {
+    display: flex;
+    height: 50px;
+    align-items: center;
+    justify-content: center;
+    padding: 0 10px;
+    background-color: var(--color-gray-f1);
+
+    .cell {
+        margin-right: 10px;
+        font-weight: 600;
+
+        svg {
+            cursor: pointer;
+            height: 26px;
+            width: 26px;
+            fill: var(--color-light-gray);
+
+            &:hover {
+                fill: var(--color-gray);
+            }
+
+            &.right {
+                transform: rotate(180deg);
+            }
+        }
+
+        input {
+            height: 34px;
+            width: 80px;
+            border: none;
+            border-radius: 4px;
+            padding: 0 4px;
+            outline: 1px solid transparent;
+            font-size: 16px;
+        }
+
+        ::ng-deep {
+            .mat-slide-toggle.mat-checked .mat-slide-toggle-bar {
+                background-color: #c2185b;
+            }
+        }
+    }
+}

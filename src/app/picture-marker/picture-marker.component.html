@@ -1,1 +1,11 @@
-<p>picture-marker works!</p>
+<div class="picture-marker-container">
+    <app-picture-header></app-picture-header>
+    <div #markingArea class="marking-area">
+        <div class="picture-hoster">
+            <img [style.width.px]="markingSize?.width" [style.height.px]="markingSize?.height" [src]="editingPicture" alt="" />
+        </div>
+        <div class="picture-div-hoster">
+            <div id="picture-div" [style.width.px]="markingSize?.width" [style.height.px]="markingSize?.height"></div>
+        </div>
+    </div>
+</div>

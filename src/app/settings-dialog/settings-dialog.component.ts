@@ -1,18 +1,18 @@
-import { Component, OnInit } from '@angular/core';
+import { ChangeDetectionStrategy, Component, OnInit } from '@angular/core';
 import { GlobalEventBusService } from '../core/event-bus';
-
+import CanvasHelpers from '../core/canvasHelpers';
 @Component({
     selector: 'app-settings-dialog',
     templateUrl: './settings-dialog.component.html',
-    styleUrls: ['./settings-dialog.component.scss']
+    styleUrls: ['./settings-dialog.component.scss'],
+    changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class SettingsDialogComponent implements OnInit {
-
     labels = [];
     labelValue = '';
     frameRate = 50;
 
-    constructor(private eventBus: GlobalEventBusService) { }
+    constructor(private eventBus: GlobalEventBusService) {}
 
     ngOnInit(): void {
         this.getLabels();
@@ -41,7 +41,7 @@ export class SettingsDialogComponent implements OnInit {
 
         const label = {
             name,
-            color: this.getColor()
+            color: CanvasHelpers.getColor(),
         };
 
         this.labels.push(label);
@@ -66,13 +66,5 @@ export class SettingsDialogComponent implements OnInit {
 
         this.eventBus.updateFrameRate(value);
         localStorage.setItem('frameRate', rate);
-    }
-
-    private getColor() {
-        return `#${this.getRandomValue().toString(16)}${this.getRandomValue().toString(16)}${this.getRandomValue().toString(16)}`;
-    }
-
-    private getRandomValue() {
-        return Math.ceil(Math.random() * 155) + 100;
     }
 }

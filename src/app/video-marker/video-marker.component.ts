@@ -1,9 +1,10 @@
-import { Component, OnInit } from '@angular/core';
+import { ChangeDetectionStrategy, Component, OnInit } from '@angular/core';
 
 @Component({
   selector: 'app-video-marker',
   templateUrl: './video-marker.component.html',
-  styleUrls: ['./video-marker.component.scss']
+  styleUrls: ['./video-marker.component.scss'],
+  changeDetection: ChangeDetectionStrategy.OnPush
 })
 export class VideoMarkerComponent implements OnInit {
 
