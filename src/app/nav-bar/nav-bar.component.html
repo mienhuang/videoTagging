@@ -1,13 +1,13 @@
 <div class="container">
     <div class="menu">
-        <div class="cell" [class.active]="currentRoute === 'video'" (click)="navigate('video')">
-            <svg>
-                <use href="#video-import"></use>
-            </svg>
-        </div>
         <div class="cell" [class.active]="currentRoute === 'picture'" (click)="navigate('picture')">
             <svg>
                 <use href="#picture-import"></use>
+            </svg>
+        </div>
+        <div class="cell" [class.active]="currentRoute === 'video'" (click)="navigate('video')">
+            <svg>
+                <use href="#video-import"></use>
             </svg>
         </div>
     </div>

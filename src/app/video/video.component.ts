@@ -218,10 +218,10 @@ export class VideoComponent implements OnInit, OnDestroy, OnChanges, AfterViewIn
                 switchMap(() => {
                     return this.event.saveFile({
                         path: `${this.normalFilePath.filePath}${this.normalFilePath.fileName.split('.')[0]}.vt`,
-                        contents: {
+                        contents: JSON.stringify({
                             customData: this._customData,
                             frameData: this._frames,
-                        },
+                        }),
                     });
                 }),
                 tap(() => {
@@ -1373,7 +1373,7 @@ export class VideoComponent implements OnInit, OnDestroy, OnChanges, AfterViewIn
         this.event
             .saveFile({
                 path: `${this.normalFilePath.filePath}${this.normalFilePath.fileName.split('.')[0]}.json`,
-                contents: target,
+                contents: JSON.stringify(target),
             })
             .pipe(
                 take(1),

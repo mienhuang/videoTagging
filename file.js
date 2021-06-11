@@ -102,6 +102,7 @@ class FileService {
     }
 
     saveFileCb = (event, arg) => {
+        console.log(arg.path)
         const path = arg.path;
         const contents = arg.contents;
         this.writeText(path, contents).then(() => {
@@ -143,9 +144,11 @@ class FileService {
                 width,
                 height,
                 id: index,
-                name: `000${index}.jpg`,
+                name: file.name,
             };
         });
+
+        console.log(targetFileList, '???????????')
 
         const projectData = {
             dateCaptureTime: this.getTime(),
@@ -158,6 +161,8 @@ class FileService {
             currentEditingIndex: 0,
             unTagedRegionsIndex: [],
         };
+
+        console.log(projectData)
 
         this.writeText(file, JSON.stringify(projectData)).then(() => {
             event.reply('file_read', JSON.stringify(projectData));

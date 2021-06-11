@@ -1,10 +1,12 @@
-import { Component, OnInit, ViewChild, ElementRef, ChangeDetectionStrategy } from '@angular/core';
-import { GlobalEventBusService } from '../core/event-bus';
+import { Component, OnInit, ViewChild, ElementRef, ChangeDetectionStrategy, OnDestroy } from '@angular/core';
 import { MatDialog } from '@angular/material/dialog';
-import { SettingsDialogComponent } from '../settings-dialog/settings-dialog.component';
-import { KeyboardEventService } from '../core/keyboard-event';
 import { NavigationEnd, Router, RouterEvent } from '@angular/router';
 import { filter, tap } from 'rxjs/operators';
+import { Subscription } from 'rxjs';
+
+import { GlobalEventBusService } from '../core/event-bus';
+import { SettingsDialogComponent } from '../settings-dialog/settings-dialog.component';
+import { KeyboardEventService } from '../core/keyboard-event';
 import { IPictureInfo } from '../core/models/picture.model';
 
 @Component({
@@ -13,8 +15,10 @@ import { IPictureInfo } from '../core/models/picture.model';
     styleUrls: ['./nav-bar.component.scss'],
     changeDetection: ChangeDetectionStrategy.OnPush,
 })
-export class NavBarComponent implements OnInit {
-    public currentRoute = 'video';
+export class NavBarComponent implements OnInit, OnDestroy {
+    public currentRoute = 'picture';
+
+    private sub = new Subscription();
 
     constructor(
         private bus: GlobalEventBusService,
@@ -22,7 +26,7 @@ export class NavBarComponent implements OnInit {
         private keyboard: KeyboardEventService,
         private router: Router
     ) {
-        this.router.events
+        const routEndSub = this.router.events
             .pipe(
                 filter((e: RouterEvent) => e instanceof NavigationEnd),
                 tap(({ url }: NavigationEnd) => {
@@ -39,6 +43,8 @@ export class NavBarComponent implements OnInit {
                 })
             )
             .subscribe();
+
+        this.sub.add(routEndSub);
     }
 
     @ViewChild('import') import: ElementRef;
@@ -60,7 +66,6 @@ export class NavBarComponent implements OnInit {
     }
 
     selectFolder(event: any) {
-        console.log(event, 'event');
         const files = event.target.files;
 
         const infoList: IPictureInfo[] = [];
@@ -109,5 +114,9 @@ export class NavBarComponent implements OnInit {
 
     exportFile() {
         this.bus.exportFile();
+    }
+
+    ngOnDestroy() {
+        this.sub.unsubscribe();
     }
 }

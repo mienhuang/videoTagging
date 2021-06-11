@@ -1,23 +1,38 @@
 <footer>
-    <div class="left">
-        <div class="text">Simple Rate: <span class="value">{{event.frameRateUpdate$ | async}}</span></div>
-        <div class="text">
-            Step Length: <span class="value">{{ stepLegth }}</span>
+    <ng-container *ngIf="currentRoute === 'video'">
+        <div class="left">
+            <div class="text">
+                Simple Rate: <span class="value">{{ event.frameRateUpdate$ | async }}</span>
+            </div>
+            <div class="text">
+                Step Length: <span class="value">{{ stepLegth }}</span>
+            </div>
         </div>
-    </div>
-    <div class="right">
-        <ng-container *ngIf="info | async as _">
-            <!-- <div class="text">
-                Total Frames:
-                <span class="value">{{ _.totalFrames }}</span>
-            </div>
+        <div class="right">
+            <ng-container *ngIf="info | async as _">
+                <!-- <div class="text">
+                    Total Frames:
+                    <span class="value">{{ _.totalFrames }}</span>
+                </div>
+                <div class="text">
+                    Total Regions:
+                    <span class="value">{{ _.totalRegions }}</span>
+                </div> -->
+                <div class="text">
+                    Max Track ID: <span class="value">{{ _.maxTrackId }}</span>
+                </div>
+            </ng-container>
+        </div>
+    </ng-container>
+    <ng-container *ngIf="currentRoute === 'picture'">
+        <div class="left">
             <div class="text">
-                Total Regions:
-                <span class="value">{{ _.totalRegions }}</span>
-            </div> -->
-            <div class="text">
-                Max Track ID: <span class="value">{{ _.maxTrackId }}</span>
+                {{ event.picturePath$ | async }}
             </div>
-        </ng-container>
-    </div>
+        </div>
+        <div class="right">
+            <div class="text">{{ event.picturePageInstance$ | async }}</div>
+            <div class="text clickable" (click)="goToFirstUntagPicture()">Has Untaged Region: {{ event.pictureUntagState$ | async }}</div>
+        </div>
+    </ng-container>
 </footer>

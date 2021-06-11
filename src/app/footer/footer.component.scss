@@ -11,26 +11,33 @@ footer {
 
     .left {
         flex: 1;
+        height: 26px;
         display: flex;
         justify-content: flex-start;
         align-items: center;
-        .text {
-            margin-right: 20px;
-        }
     }
 
     .right {
         flex: 1;
+        height: 26px;
         display: flex;
         justify-content: flex-end;
         align-items: center;
-        .text {
-            margin-left: 20px;
-        }
     }
 
     .text {
         font-size: 12px;
+        height: 26px;
+        line-height: 26px;
+        padding: 0 10px;
+
+        &.clickable {
+            cursor: pointer;
+        }
+
+        &:hover {
+            background-color: rgba(255, 255, 255, 0.2);
+        }
 
         .value {
             font-size-adjust: 14px;

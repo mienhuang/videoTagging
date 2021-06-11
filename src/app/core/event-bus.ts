@@ -4,7 +4,7 @@ import { IRegionInfo } from './models/region.model';
 import { IFace } from './models/face.model';
 import { ITag } from './models/canvas.model';
 import { timeStamp } from 'console';
-import { IFile, IFolder, IPictureInfo } from './models/picture.model';
+import { IFile, IFolder, IPictureInfo, IPictureUntagState } from './models/picture.model';
 import { map, tap } from 'rxjs/operators';
 import { ISaveFile } from './models/file.model';
 
@@ -39,6 +39,11 @@ export class GlobalEventBusService {
     private selectPictureProject: Subject<IFolder> = new Subject();
     private pictureLables: Subject<ITag[]> = new Subject();
     private pictureIndexOffset: Subject<number> = new Subject();
+    private pictureIndexChange: Subject<number> = new Subject();
+    private goToFirstUntag: Subject<void> = new Subject();
+    private picturePath: BehaviorSubject<string> = new BehaviorSubject('');
+    private pictureUntagState: BehaviorSubject<boolean> = new BehaviorSubject(false);
+    private picturePageInstance: BehaviorSubject<string> = new BehaviorSubject('0 : 0');
 
     resize$ = this.resize.asObservable();
     videoSelected$ = this.videoSelected.asObservable();
@@ -56,13 +61,19 @@ export class GlobalEventBusService {
     regionInfo$ = this.regionInfo.asObservable();
     queryFaceEvent$ = this.queryFaceEvent.asObservable();
     labelUpdateEvent$ = this.labelUpdateEvent.asObservable();
-    pictureLabelEvent$ = this.pictureLabelEvent.asObservable();
     exportFileEvent$ = this.exportFileEvent.asObservable();
     frameRateUpdate$ = this.frameRateUpdate.asObservable();
     videTimeEvent$ = this.videoTimeEvent.asObservable();
+
+    pictureLabelEvent$ = this.pictureLabelEvent.asObservable();
     selectPictureProject$ = this.selectPictureProject.asObservable();
     pictureLables$ = this.pictureLables.asObservable();
     pictureIndexOffset$ = this.pictureIndexOffset.asObservable();
+    picturePath$ = this.picturePath.asObservable();
+    pictureIndexChange$ = this.pictureIndexChange.asObservable();
+    picturePageInstance$ = this.picturePageInstance.asObservable();
+    pictureUntagState$ = this.pictureUntagState.asObservable();
+    goToFirstUntag$ = this.goToFirstUntag.asObservable();
 
     constructor() {
         const lablesText = localStorage.getItem('labels');
@@ -115,7 +126,7 @@ export class GlobalEventBusService {
         this.ipcRenderer.on('file_save', (event, arg) => {
             _.next(arg);
         });
-        this.ipcRenderer.send('save_file', JSON.stringify(data));
+        this.ipcRenderer.send('save_file', data);
 
         return _;
     }
@@ -217,5 +228,25 @@ export class GlobalEventBusService {
 
     updatePictureIndex(offset: number) {
         this.pictureIndexOffset.next(offset);
+    }
+
+    setPictureIndex(index: number) {
+        this.pictureIndexChange.next(index);
+    }
+
+    setPicturePath(path: string) {
+        this.picturePath.next(path);
+    }
+
+    updatePictureUntagState(state: boolean) {
+        this.pictureUntagState.next(state);
+    }
+
+    updatePicturePageInstance(index: string) {
+        this.picturePageInstance.next(index);
+    }
+
+    triggerGoToFirstUntag() {
+        this.goToFirstUntag.next();
     }
 }

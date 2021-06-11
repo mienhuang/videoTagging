@@ -33,3 +33,8 @@ export interface IFile {
 export interface IObject {
     [key: string]: any;
 }
+
+export interface IPictureUntagState {
+    hasUntag: boolean;
+    firstIndex: number;
+}

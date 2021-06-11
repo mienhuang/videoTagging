@@ -42,7 +42,8 @@ export class PictureHeaderComponent implements OnInit, OnDestroy {
     }
 
     setTag() {
-        this.toggleTag(this.pictureLabelControl.value);
+        const value = this.pictureLabelControl.value;
+        this.toggleTag(typeof value === 'string' ? value : value.name);
     }
 
     toggleTag(type: string) {

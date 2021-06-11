@@ -1,20 +1,23 @@
 import { ChangeDetectionStrategy, ChangeDetectorRef, Component, OnDestroy, OnInit } from '@angular/core';
 import { merge, Observable, Subscription } from 'rxjs';
-import { tap } from 'rxjs/operators';
+import { filter, tap } from 'rxjs/operators';
 import { KeyboardEventService } from '../core/keyboard-event';
 import { GlobalEventBusService } from '../core/event-bus';
 import { IRegionInfo } from '../core/models/region.model';
+import { NavigationEnd, Router, RouterEvent } from '@angular/router';
+import { MatSnackBar } from '@angular/material/snack-bar';
 
 @Component({
     selector: 'app-footer',
     templateUrl: './footer.component.html',
     styleUrls: ['./footer.component.scss'],
-    changeDetection: ChangeDetectionStrategy.OnPush
+    changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class FooterComponent implements OnInit, OnDestroy {
-
     stepLegth = 1;
     info: Observable<IRegionInfo>;
+    public currentRoute = 'picture';
+    public hasUntagRegion = false;
 
     private readonly maxStepLenght = 16;
     private readonly minStepLenght = 1;
@@ -23,7 +26,9 @@ export class FooterComponent implements OnInit, OnDestroy {
     constructor(
         private keyboard: KeyboardEventService,
         private cdr: ChangeDetectorRef,
-        public event: GlobalEventBusService
+        public event: GlobalEventBusService,
+        private router: Router,
+        private _snackBar: MatSnackBar
     ) {
         const upDownSub = merge(
             this.keyboard.arrowUp$.pipe(
@@ -35,23 +40,62 @@ export class FooterComponent implements OnInit, OnDestroy {
                 tap(() => {
                     this.stepLegth = Math.max(this.minStepLenght, this.stepLegth / 2);
                 })
-            ),
+            )
         ).subscribe(() => {
             this.event.setCurrentStepLength(this.stepLegth);
             localStorage.setItem('stepLength', '' + this.stepLegth);
             this.cdr.markForCheck();
         });
 
+        const routEndSub = this.router.events
+            .pipe(
+                filter((e: RouterEvent) => e instanceof NavigationEnd),
+                tap(({ url }: NavigationEnd) => {
+                    switch (url) {
+                        case '/picture':
+                            this.currentRoute = 'picture';
+                            break;
+                        case '/video':
+                            this.currentRoute = 'video';
+                            break;
+                        default:
+                            break;
+                    }
+                })
+            )
+            .subscribe();
+
+        const untagRegionSub = this.event.pictureUntagState$
+            .pipe(
+                tap((state: boolean) => {
+                    this.hasUntagRegion = state;
+                    this.cdr.markForCheck();
+                })
+            )
+            .subscribe();
+
         this.info = this.event.regionInfo$;
 
+        this._sub.add(routEndSub);
         this._sub.add(upDownSub);
+        this._sub.add(untagRegionSub);
     }
 
-    ngOnInit(): void {
+    ngOnInit(): void {}
+
+    goToFirstUntagPicture() {
+        if (!this.hasUntagRegion) {
+            this._snackBar.open('No Untaged Region found', 'Notice', {
+                verticalPosition: 'top',
+                duration: 3000,
+            });
+
+            return;
+        }
+        this.event.triggerGoToFirstUntag();
     }
 
     ngOnDestroy() {
         this._sub.unsubscribe();
     }
-
 }

@@ -12,7 +12,7 @@ const routes: Routes = [
         children: [
             {
                 path: '',
-                redirectTo: 'video',
+                redirectTo: 'picture',
                 pathMatch: 'full'
             },
             {

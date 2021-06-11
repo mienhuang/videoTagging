@@ -10,6 +10,8 @@ export class KeyboardEventService {
     private saveData = new Subject();
     private arrowUp = new Subject();
     private arrowDown = new Subject();
+    private pageUp = new Subject();
+    private pageDown = new Subject();
 
     spaceTabed$ = this.spaceTabed.asObservable();
     arrowLeft$ = this.arrowLeft.asObservable();
@@ -17,6 +19,8 @@ export class KeyboardEventService {
     saveData$ = this.saveData.asObservable();
     arrowUp$ = this.arrowUp.asObservable();
     arrowDown$ = this.arrowDown.asObservable();
+    pageUp$ = this.pageUp.asObservable();
+    pageDown$ = this.pageDown.asObservable();
 
     private _sub = new Subscription();
 
@@ -34,19 +38,17 @@ export class KeyboardEventService {
                 sampleTime(300),
                 tap((event: KeyboardEvent) => {
                     event.preventDefault();
-                    this.checkKeyCodeForKeyDown(event.keyCode);
+                    this.checkKeyCodeForKeyDown(event.code);
                 })
             )
             .subscribe(console.log);
         this._sub.add(keyUpSub);
         this._sub.add(keyDownSub);
-
     }
 
     buttonTriggerSave() {
         this.saveData.next(true);
     }
-
 
     checkKeyCodeForKeyUp(event) {
         switch (event.keyCode) {
@@ -70,13 +72,19 @@ export class KeyboardEventService {
         }
     }
 
-    checkKeyCodeForKeyDown(code: number) {
+    checkKeyCodeForKeyDown(code: string) {
         switch (code) {
-            case 37:
+            case 'ArrowLeft':
                 this.arrowLeft.next(true);
                 break;
-            case 39:
+            case 'ArrowRight':
                 this.arrowRight.next(true);
+                break;
+            case 'PageUp':
+                this.pageUp.next(true);
+                break;
+            case 'PageDown':
+                this.pageDown.next(true);
                 break;
             default:
                 break;

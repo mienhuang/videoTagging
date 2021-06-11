@@ -1,4 +1,4 @@
 export interface ISaveFile {
     path: string;
-    contents: any;
+    contents: string;
 }

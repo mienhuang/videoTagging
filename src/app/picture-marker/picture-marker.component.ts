@@ -2,8 +2,8 @@ import { ChangeDetectionStrategy, ChangeDetectorRef, Component, ElementRef, OnDe
 
 import { GlobalEventBusService } from '../core/event-bus';
 import { KeyboardEventService } from '../core/keyboard-event';
-import { tap, filter, delay, switchMap, switchMapTo, take, map, retryWhen } from 'rxjs/operators';
-import { BehaviorSubject, Observable, Subscription } from 'rxjs';
+import { tap, filter, delay, switchMap, switchMapTo, take, map, retryWhen, mapTo } from 'rxjs/operators';
+import { BehaviorSubject, merge, Observable, Subscription } from 'rxjs';
 import { CanvasTools } from 'vott-ct';
 import { RegionData } from 'vott-ct/lib/js/CanvasTools/Core/RegionData';
 
@@ -65,6 +65,13 @@ export class PictureMarkerComponent implements OnInit, OnDestroy {
                     this.frameHeight = this.markingArea.nativeElement.clientHeight;
                     this.frameWidth = this.markingArea.nativeElement.clientWidth;
                     this.resetImageEditor();
+                    if (this.project.files && this.project.currentEditingIndex > -1) {
+                        const picture = this.project?.files[this.project.currentEditingIndex];
+                        if (picture) {
+                            const regions = this.pictures[picture.id] || [];
+                            this.repaintRegions(regions);
+                        }
+                    }
                 })
             )
             .subscribe();
@@ -103,15 +110,37 @@ export class PictureMarkerComponent implements OnInit, OnDestroy {
             )
             .subscribe();
 
-        const indexOffsetSub = this.eventBus.pictureIndexOffset$
-            .pipe(
-                tap((offset: number) => {
+        const indexSub = merge(
+            merge(
+                this.eventBus.pictureIndexOffset$,
+                this.keyboardEvent.arrowDown$.pipe(mapTo(1)),
+                this.keyboardEvent.arrowUp$.pipe(mapTo(-1)),
+                this.keyboardEvent.pageDown$.pipe(mapTo(1)),
+                this.keyboardEvent.pageUp$.pipe(mapTo(-1)),
+                this.keyboardEvent.arrowLeft$.pipe(mapTo(-1)),
+                this.keyboardEvent.arrowRight$.pipe(mapTo(1))
+            ).pipe(
+                map((offset: number) => {
                     const current = this.project.currentEditingIndex;
                     const target = current + offset;
-                    if (target >= 0 && target < this.project.files.length) {
-                        this.project.currentEditingIndex = target;
-                        this.loadPicture();
-                    }
+                    return target >= 0 && target < this.project.files.length ? target : current;
+                })
+            ),
+            this.eventBus.pictureIndexChange$,
+            this.eventBus.goToFirstUntag$.pipe(
+                map(() => {
+                    return this.project.unTagedRegionsIndex[0];
+                })
+            )
+        )
+            .pipe(
+                tap(() => {
+                    this.checkUntagedRegion(this.pictures[this.project.currentEditingIndex]);
+                    this.eventBus.updatePictureUntagState(this.project.unTagedRegionsIndex.length > 0);
+                }),
+                tap((target) => {
+                    this.project.currentEditingIndex = target;
+                    this.loadPicture();
                 })
             )
             .subscribe();
@@ -124,10 +153,10 @@ export class PictureMarkerComponent implements OnInit, OnDestroy {
                 switchMap(() =>
                     this.eventBus.saveFile({
                         path: `${this.project.path}picture.vt`,
-                        contents: {
+                        contents: JSON.stringify({
                             ...this.project,
                             pictureResult: this.pictures,
-                        },
+                        }),
                     })
                 ),
                 tap(() => {
@@ -139,7 +168,7 @@ export class PictureMarkerComponent implements OnInit, OnDestroy {
         this.sub.add(resizeSub);
         this.sub.add(selectFolderSub);
         this.sub.add(tagChangeSub);
-        this.sub.add(indexOffsetSub);
+        this.sub.add(indexSub);
         this.sub.add(saveDataSub);
     }
 
@@ -192,7 +221,9 @@ export class PictureMarkerComponent implements OnInit, OnDestroy {
             map((res) => JSON.parse(res)),
             tap((res: IPictureProject) => {
                 this.project = res;
+                this.tags = this.project.labels;
                 this.pictures = res.pictureResult;
+                this.eventBus.updatePictureUntagState(this.project.unTagedRegionsIndex.length > 0);
                 if (res.currentEditingIndex === -1) {
                     return;
                 }
@@ -214,12 +245,12 @@ export class PictureMarkerComponent implements OnInit, OnDestroy {
         const editorContainer = document.getElementById('picture-div') as HTMLDivElement;
 
         this.editor = new CanvasTools.Editor(editorContainer).api;
-        this.editor.autoResize = true;
+        this.editor.autoResize = false;
         this.editor.onSelectionEnd = this.onSelectionEnd;
         this.editor.onRegionMoveEnd = this.onRegionMoveEnd;
         this.editor.onRegionDelete = this.onRegionDelete;
         this.editor.onRegionSelected = this.onRegionSelected;
-        this.editor.AS.resize(0, 0);
+        this.editor.AS.resize(this.frameHeight, this.frameWidth);
 
         // this.editor.AS.setSelectionMode({ mode: SelectionMode });
     }
@@ -417,9 +448,13 @@ export class PictureMarkerComponent implements OnInit, OnDestroy {
         for (const selectedRegion of selectedRegions) {
             selectedRegion.tags = transformer(selectedRegion.tags, tag);
         }
+
         this.updateRegions(selectedRegions);
 
         this.onSelectedRegionsChanged(selectedRegions);
+
+        this.checkUntagedRegion(this.pictures[this.project.currentEditingIndex]);
+        this.eventBus.updatePictureUntagState(this.project.unTagedRegionsIndex.length > 0);
     };
 
     private updateRegions = (updates: IPictureRegion[]) => {
@@ -438,10 +473,19 @@ export class PictureMarkerComponent implements OnInit, OnDestroy {
     };
 
     private loadPicture() {
+        console.log('current project: ', this.project);
+        if (this.project.files.length === 0) {
+            return;
+        }
         const picture = this.project.files[this.project.currentEditingIndex];
         this.editingPicture = this.domSanitizer.bypassSecurityTrustUrl(picture.path);
         this.editingPictureInfo = picture;
         const regions = this.pictures[picture.id] || [];
+        const labels = this.project.labels;
+        this.eventBus.setPictureRecentLabels(labels.length > 5 ? labels.slice(0, 5) : labels.slice());
+        this.eventBus.setPictureLabels(labels);
+        this.eventBus.setPicturePath(this.project.path);
+        this.eventBus.updatePicturePageInstance(`${this.project.currentEditingIndex + 1} / ${this.project.files.length}`);
         this.resetImageEditor();
         this.repaintRegions(regions);
         this.cdRef.markForCheck();
@@ -463,5 +507,21 @@ export class PictureMarkerComponent implements OnInit, OnDestroy {
                 CanvasHelpers.getPictureTagsDescriptor(this.tags, region, region.tags[0])
             );
         });
+    }
+
+    private checkUntagedRegion(regions: IPictureRegion[]): void {
+        if (!regions) {
+            return;
+        }
+        const hasUntagedRegion = regions.some((region) => !region.tags.length);
+        const untagedList = this.project.unTagedRegionsIndex;
+        const currentIndex = this.project.currentEditingIndex;
+        console.log({ hasUntagedRegion, untagedList, currentIndex, regions });
+        if (hasUntagedRegion) {
+            this.project.unTagedRegionsIndex = [...new Set([...untagedList, currentIndex])].sort();
+            return;
+        }
+
+        this.project.unTagedRegionsIndex = untagedList.filter((i) => i !== currentIndex);
     }
 }
