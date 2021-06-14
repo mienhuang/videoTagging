@@ -1,41 +1,41 @@
 <div class="container">
     <div class="menu">
         <div class="cell" [class.active]="currentRoute === 'picture'" (click)="navigate('picture')">
-            <svg>
+            <svg matTooltip="Picture" matTooltipPosition="right">
                 <use href="#picture-import"></use>
             </svg>
         </div>
         <div class="cell" [class.active]="currentRoute === 'video'" (click)="navigate('video')">
-            <svg>
+            <svg matTooltip="Video" matTooltipPosition="right">
                 <use href="#video-import"></use>
             </svg>
         </div>
     </div>
     <div class="settings">
         <div *ngIf="currentRoute === 'video'" class="cell" (click)="import.click()">
-            <svg>
+            <svg matTooltip="Import" matTooltipPosition="right">
                 <use href="#import"></use>
             </svg>
             <input #import class="import" type="file" (change)="selectVideo($event)" accept="video/mp4" />
         </div>
         <div *ngIf="currentRoute === 'picture'" class="cell" (click)="importFolder.click()">
-            <svg>
+            <svg matTooltip="Import" matTooltipPosition="right">
                 <use href="#import"></use>
             </svg>
             <input #importFolder class="import" type="file" webkitdirectory directory (change)="selectFolder($event)" />
         </div>
         <div class="cell" (click)="saveFile()">
-            <svg>
+            <svg matTooltip="Save" matTooltipPosition="right">
                 <use href="#save"></use>
             </svg>
         </div>
         <div class="cell export" (click)="exportFile()">
-            <svg>
+            <svg matTooltip="Export File" matTooltipPosition="right">
                 <use href="#export"></use>
             </svg>
         </div>
         <div class="cell" (click)="openDialog()">
-            <svg>
+            <svg matTooltip="Settings" matTooltipPosition="right">
                 <use href="#settings"></use>
             </svg>
         </div>

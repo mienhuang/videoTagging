@@ -29,6 +29,17 @@ export default class CanvasHelpers {
         }
     }
 
+    public static toggleTagAndKeepOne(tags: string[], tag: string) {
+        const tagIndex = tags.findIndex((existingTag) => existingTag === tag);
+        if (tagIndex === -1) {
+            // Tag isn't found within region tags, add it
+            return [tag];
+        } else {
+            // Tag is within region tags, remove it
+            return tags.filter((t) => t !== tag);
+        }
+    }
+
     public static getColor() {
         return `#${this.getRandomValue().toString(16)}${this.getRandomValue().toString(16)}${this.getRandomValue().toString(16)}`;
     }

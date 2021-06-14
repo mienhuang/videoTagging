@@ -22,6 +22,7 @@ import shortid from 'shortid';
 import { IFile, IFolder, IPictureInfo, IPictureProject } from '../core/models/picture.model';
 import { DomSanitizer, SafeUrl } from '@angular/platform-browser';
 
+import { IExportFileAnnotation, IExportFileCategory, IExportFileImage, IExportFileInfo } from '../core/models/file.model';
 @Component({
     selector: 'app-picture-marker',
     templateUrl: './picture-marker.component.html',
@@ -58,6 +59,98 @@ export class PictureMarkerComponent implements OnInit, OnDestroy {
         private cdRef: ChangeDetectorRef,
         private keyboardEvent: KeyboardEventService
     ) {
+        const exportSub = this.eventBus.exportFileEvent$
+            .pipe(
+                tap(() => {
+                    this.message('Exporting File...');
+                    this.eventBus.showLoading();
+                }),
+                switchMap(() =>
+                    this.eventBus.saveFile({
+                        path: `${this.project.path}picture.vt`,
+                        contents: JSON.stringify({
+                            ...this.project,
+                            pictureResult: this.pictures,
+                        }),
+                    })
+                ),
+                map(() => {
+                    const categories: IExportFileCategory[] = this.tags.map((tag, index) => {
+                        return {
+                            name: tag.name,
+                            supercategory: tag.name,
+                            id: index + 1,
+                        };
+                    });
+                    const time = this.project.dateCaptureTime;
+                    const info: IExportFileInfo = {
+                        description: 'a description',
+                        url: 'http://www.my.org',
+                        version: '1.0',
+                        year: Number(time.year),
+                        contributor: 'zd',
+                        date_created: `${time.year}-${time.month}-${time.day}`,
+                    };
+
+                    const annotations: IExportFileAnnotation[] = [];
+                    const images: IExportFileImage[] = [];
+                    let annotationId = 1;
+
+                    this.project.files.forEach(({ width, height, id, name }: IFile) => {
+                        const regions: IPictureRegion[] = this.pictures[id] || [];
+
+                        images.push({
+                            id,
+                            width,
+                            height,
+                            license: 1,
+                            file_name: name,
+                            coco_url: null,
+                            flickr_url: null,
+                            date_captured: `${time.year}-${time.month}-${time.day} ${time.hour}:${time.min}:${time.sec}`,
+                        });
+
+                        regions.forEach((region) => {
+                            const { height: h, width: w, left, top } = region.boundingBox;
+                            const category_id = region.tags[0] ? categories.find((category) => category.name === region.tags[0]).id : -1;
+                            annotations.push({
+                                segmentation: [],
+                                area: 0,
+                                iscrowd: 0,
+                                image_id: id,
+                                bbox: [left, top, w, h],
+                                category_id,
+                                id: annotationId,
+                            });
+                            annotationId += 1;
+                        });
+                    });
+
+                    return {
+                        info,
+                        licenses: [
+                            {
+                                url: 'http://www.zd.com.cn/license',
+                                id: 1,
+                                name: 'Some License',
+                            },
+                        ],
+                        images,
+                        annotations,
+                        categories,
+                    };
+                }),
+                switchMap((data) =>
+                    this.eventBus.saveFile({
+                        path: `${this.project.path}picture.json`,
+                        contents: JSON.stringify(data),
+                    })
+                ),
+                tap(() => {
+                    this.eventBus.hideLoading();
+                })
+            )
+            .subscribe();
         const resizeSub = this.eventBus.resize$
             .pipe(
                 delay(100),
@@ -135,7 +228,8 @@ export class PictureMarkerComponent implements OnInit, OnDestroy {
         )
             .pipe(
                 tap(() => {
-                    this.checkUntagedRegion(this.pictures[this.project.currentEditingIndex]);
+                    const index = this.project.currentEditingIndex;
+                    this.checkUntagedRegion(this.pictures[this.project.files[index].id]);
                     this.eventBus.updatePictureUntagState(this.project.unTagedRegionsIndex.length > 0);
                 }),
                 tap((target) => {
@@ -170,6 +264,7 @@ export class PictureMarkerComponent implements OnInit, OnDestroy {
         this.sub.add(tagChangeSub);
         this.sub.add(indexSub);
         this.sub.add(saveDataSub);
+        this.sub.add(exportSub);
     }
 
     ngOnInit(): void {
@@ -433,20 +528,20 @@ export class PictureMarkerComponent implements OnInit, OnDestroy {
         if ((!tag && lockedTagsEmpty) || regionsEmpty) {
             return;
         }
-        let transformer: (tags: string[], tag: string) => string[];
-        if (lockedTagsEmpty) {
-            // Tag selected while region(s) selected
-            transformer = CanvasHelpers.toggleTag;
-        } else if (lockedTags.find((t) => t === tag)) {
-            // Tag added to locked tags while region(s) selected
-            transformer = CanvasHelpers.addIfMissing;
-        } else {
-            // Tag removed from locked tags while region(s) selected
-            transformer = CanvasHelpers.removeIfContained;
-        }
+        // let transformer: (tags: string[], tag: string) => string[];
+        // if (lockedTagsEmpty) {
+        //     // Tag selected while region(s) selected
+        //     transformer = CanvasHelpers.toggleTag;
+        // } else if (lockedTags.find((t) => t === tag)) {
+        //     // Tag added to locked tags while region(s) selected
+        //     transformer = CanvasHelpers.addIfMissing;
+        // } else {
+        //     // Tag removed from locked tags while region(s) selected
+        //     transformer = CanvasHelpers.removeIfContained;
+        // }
         // console.log(transformer, 'check what transfer is...')
         for (const selectedRegion of selectedRegions) {
-            selectedRegion.tags = transformer(selectedRegion.tags, tag);
+            selectedRegion.tags = CanvasHelpers.toggleTagAndKeepOne(selectedRegion.tags, tag);
         }
 
         this.updateRegions(selectedRegions);
@@ -523,5 +618,6 @@ export class PictureMarkerComponent implements OnInit, OnDestroy {
         }
 
         this.project.unTagedRegionsIndex = untagedList.filter((i) => i !== currentIndex);
+        console.log(this.project, 'this.projectthis.project');
     }
 }

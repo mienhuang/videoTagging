@@ -7,6 +7,7 @@ import { timeStamp } from 'console';
 import { IFile, IFolder, IPictureInfo, IPictureUntagState } from './models/picture.model';
 import { map, tap } from 'rxjs/operators';
 import { ISaveFile } from './models/file.model';
+import shortid from 'shortid';
 
 @Injectable({ providedIn: 'root' })
 export class GlobalEventBusService {
@@ -122,23 +123,29 @@ export class GlobalEventBusService {
 
     saveFile(data: ISaveFile): Observable<any> {
         const _ = new Subject();
+        const topic = shortid.generate();
 
-        this.ipcRenderer.on('file_save', (event, arg) => {
+        this.ipcRenderer.on(topic, (event, arg) => {
             _.next(arg);
         });
-        this.ipcRenderer.send('save_file', data);
+        this.ipcRenderer.send('save_file', {
+            ...data,
+            topic,
+        });
 
         return _;
     }
 
     readFileOrCreate(path: string, name: string): Observable<any> {
         const _ = new Subject();
+        const topic = shortid.generate();
 
-        this.ipcRenderer.on('file_read', (event, arg) => {
+        this.ipcRenderer.on(topic, (event, arg) => {
             _.next(arg);
         });
 
         this.ipcRenderer.send('read_file', {
+            topic,
             path,
             name,
         });
@@ -148,12 +155,14 @@ export class GlobalEventBusService {
 
     readPictureProjectOrCreate(path: string, name: string, files: IPictureInfo[]): Observable<any> {
         const _ = new Subject();
+        const topic = shortid.generate();
 
-        this.ipcRenderer.on('file_read', (event, arg) => {
+        this.ipcRenderer.on(topic, (event, arg) => {
             _.next(arg);
         });
 
         this.ipcRenderer.send('read_pictures', {
+            topic,
             path,
             name,
             files,

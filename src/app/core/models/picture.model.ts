@@ -11,7 +11,7 @@ export interface IPictureInfo {
 }
 
 export interface IPictureProject {
-    dateCaptureTime: string;
+    dateCaptureTime: IPictureProjectTime;
     path: string;
     files: IFile[];
     labels: ITag[];
@@ -20,6 +20,15 @@ export interface IPictureProject {
     fullName: string;
     currentEditingIndex: number;
     unTagedRegionsIndex: number[];
+}
+
+export interface IPictureProjectTime {
+    year: string;
+    month: string;
+    day: string;
+    hour: string;
+    min: string;
+    sec: string;
 }
 
 export interface IFile {

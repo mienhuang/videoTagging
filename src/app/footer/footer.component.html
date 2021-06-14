@@ -27,12 +27,19 @@
     <ng-container *ngIf="currentRoute === 'picture'">
         <div class="left">
             <div class="text">
+                <svg>
+                    <use href="#folder"></use>
+                </svg>
                 {{ event.picturePath$ | async }}
             </div>
         </div>
         <div class="right">
             <div class="text">{{ event.picturePageInstance$ | async }}</div>
-            <div class="text clickable" (click)="goToFirstUntagPicture()">Has Untaged Region: {{ event.pictureUntagState$ | async }}</div>
+            <div *ngIf="event.pictureUntagState$ | async" class="text clickable" (click)="goToFirstUntagPicture()" matTooltip="Has Untaged Region">
+                <svg>
+                    <use href="#tag"></use>
+                </svg>
+            </div>
         </div>
     </ng-container>
 </footer>

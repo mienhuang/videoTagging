@@ -51,6 +51,10 @@ export class SettingsDialogComponent implements OnInit {
         this.eventBus.updateLabels(this.labels);
     }
 
+    resetApplication() {
+        localStorage.clear();
+    }
+
     addressChange(e) {
         const value = e.target.value;
         localStorage.setItem('imgURL', value);

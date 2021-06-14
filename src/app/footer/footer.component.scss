@@ -30,6 +30,17 @@ footer {
         height: 26px;
         line-height: 26px;
         padding: 0 10px;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+
+        svg {
+            height: 16px;
+            width: 16px;
+            fill: var(--color-white);
+            stroke: var(--color-white);
+            margin-right: 4px;
+        }
 
         &.clickable {
             cursor: pointer;

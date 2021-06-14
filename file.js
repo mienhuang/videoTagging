@@ -102,36 +102,37 @@ class FileService {
     }
 
     saveFileCb = (event, arg) => {
-        console.log(arg.path)
+        console.log(arg.path);
         const path = arg.path;
+        const topic = arg.topic;
         const contents = arg.contents;
         this.writeText(path, contents).then(() => {
-            event.reply('file_save', contents);
+            event.reply(topic, contents);
         });
     };
 
     readFileCb = (event, arg) => {
-        const { path, name } = arg;
+        const { path, name, topic } = arg;
         const file = `${path}${name.split('.')[0]}.vt`;
         if (fs.existsSync(file)) {
             this.readText(file).then((data) => {
-                event.reply('file_read', data);
+                event.reply(topic, data);
             });
 
             return;
         }
 
         this.writeText(file, defaultText).then(() => {
-            event.reply('file_read', defaultText);
+            event.reply(topic, defaultText);
         });
     };
 
     readPicturesCb = (event, arg) => {
-        const { path, name, files } = arg;
+        const { path, name, files, topic } = arg;
         const file = `${path}${name}`;
         if (fs.existsSync(file)) {
             this.readText(file).then((data) => {
-                event.reply('file_read', data);
+                event.reply(topic, data);
             });
 
             return;
@@ -143,12 +144,12 @@ class FileService {
                 path: file.path,
                 width,
                 height,
-                id: index,
+                id: index + 1,
                 name: file.name,
             };
         });
 
-        console.log(targetFileList, '???????????')
+        console.log(targetFileList, '???????????');
 
         const projectData = {
             dateCaptureTime: this.getTime(),
@@ -162,28 +163,32 @@ class FileService {
             unTagedRegionsIndex: [],
         };
 
-        console.log(projectData)
+        console.log(projectData);
 
         this.writeText(file, JSON.stringify(projectData)).then(() => {
-            event.reply('file_read', JSON.stringify(projectData));
+            event.reply(topic, JSON.stringify(projectData));
         });
     };
 
     getTime = () => {
         const date = new Date();
-        const year = date.getFullYear();
-        const month = date.getMonth() + 1 + '';
-        const day = date.getDate() + '';
-        const hour = date.getHours() + '';
-        const min = date.getMinutes() + '';
-        const sec = date.getSeconds() + '';
+        const year = date.getFullYear() + '';
+        const month = (date.getMonth() + 1 + '').padStart(2, '0');
+        const day = (date.getDate() + '').padStart(2, '0');
+        const hour = (date.getHours() + '').padStart(2, '0');
+        const min = (date.getMinutes() + '').padStart(2, '0');
+        const sec = (date.getSeconds() + '').padStart(2, '0');
 
         // tslint:disable-next-line:max-line-length
-        return `${year}-${month.padStart(2, '0')}-${day.padStart(2, '0')} ${hour.padStart(2, '0')}-${min.padStart(2, '0')}-${sec.padStart(
-            2,
-            '0'
-        )}`;
-    }
+        return {
+            year,
+            month,
+            day,
+            hour,
+            min,
+            sec,
+        };
+    };
 }
 
 module.exports = new FileService();
