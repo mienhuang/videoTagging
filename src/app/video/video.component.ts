@@ -561,6 +561,10 @@ export class VideoComponent implements OnInit, OnDestroy, OnChanges, AfterViewIn
 
     ngOnDestroy() {
         this.sub.unsubscribe();
+        if (!this.video) {
+            return;
+        }
+
         this.video.removeEventListener('canplay', this.readyToPlay);
         this.video.removeEventListener('loadeddata', this.addPoster);
         this.video.removeEventListener('ended', this.ended);

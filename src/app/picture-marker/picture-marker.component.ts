@@ -3,7 +3,7 @@ import { ChangeDetectionStrategy, ChangeDetectorRef, Component, ElementRef, OnDe
 import { GlobalEventBusService } from '../core/event-bus';
 import { KeyboardEventService } from '../core/keyboard-event';
 import { tap, filter, delay, switchMap, switchMapTo, take, map, retryWhen, mapTo } from 'rxjs/operators';
-import { BehaviorSubject, merge, Observable, Subscription } from 'rxjs';
+import { BehaviorSubject, merge, Observable, Subject, Subscription } from 'rxjs';
 import { CanvasTools } from 'vott-ct';
 import { RegionData } from 'vott-ct/lib/js/CanvasTools/Core/RegionData';
 
@@ -49,6 +49,7 @@ export class PictureMarkerComponent implements OnInit, OnDestroy {
     private readonly markingAreaOffset = 40;
     private readonly lockedTags = [];
     private sub = new Subscription();
+    private saveProject = new Subject();
 
     @ViewChild('markingArea', { static: true }) markingArea: ElementRef;
 
@@ -111,18 +112,22 @@ export class PictureMarkerComponent implements OnInit, OnDestroy {
                         });
 
                         regions.forEach((region) => {
-                            const { height: h, width: w, left, top } = region.boundingBox;
-                            const category_id = region.tags[0] ? categories.find((category) => category.name === region.tags[0]).id : -1;
-                            annotations.push({
-                                segmentation: [],
-                                area: 0,
-                                iscrowd: 0,
-                                image_id: id,
-                                bbox: [left, top, w, h],
-                                category_id,
-                                id: annotationId,
-                            });
-                            annotationId += 1;
+                            if (region.tags[0]) {
+                                const { height: h, width: w, left, top } = region.boundingBox;
+                                const category_id = region.tags[0]
+                                    ? categories.find((category) => category.name === region.tags[0]).id
+                                    : -1;
+                                annotations.push({
+                                    segmentation: [],
+                                    area: 0,
+                                    iscrowd: 0,
+                                    image_id: id,
+                                    bbox: [left, top, w, h],
+                                    category_id,
+                                    id: annotationId,
+                                });
+                                annotationId += 1;
+                            }
                         });
                     });
 
@@ -235,11 +240,12 @@ export class PictureMarkerComponent implements OnInit, OnDestroy {
                 tap((target) => {
                     this.project.currentEditingIndex = target;
                     this.loadPicture();
-                })
+                }),
+                tap(() => this.saveProject.next(true))
             )
             .subscribe();
 
-        const saveDataSub = this.keyboardEvent.saveData$
+        const saveDataSub = merge(this.keyboardEvent.saveData$, this.saveProject)
             .pipe(
                 tap(() => {
                     this.eventBus.showLoading();

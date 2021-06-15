@@ -25,12 +25,12 @@ function createWindow() {
     });
 
     // 并且为你的应用加载index.html
-    win.loadURL('http://localhost:4200');
-    // win.loadURL(url.format({
-    //     pathname: path.join(__dirname, '/dist/videoTagging/index.html'),
-    //     protocol: 'file:',
-    //     slashes: true
-    // }));
+    // win.loadURL('http://localhost:4200');
+    win.loadURL(url.format({
+        pathname: path.join(__dirname, '/dist/videoTagging/index.html'),
+        protocol: 'file:',
+        slashes: true
+    }));
     win.maximize();
 
     // 打开开发者工具

@@ -1,12 +1,12 @@
 {
     "name": "video-tagging",
-    "version": "1.0.2",
+    "version": "1.0.4",
     "main": "main.js",
     "scripts": {
         "ng": "ng",
         "electron": "electron .",
         "start": "ng serve",
-        "build": "ng build",
+        "build": "ng build --prod",
         "test": "ng test",
         "lint": "ng lint",
         "e2e": "ng e2e",
