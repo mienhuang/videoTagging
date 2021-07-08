@@ -26,13 +26,14 @@ import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatAutocompleteModule } from '@angular/material/autocomplete';
 import { MatInputModule } from '@angular/material/input';
-import {MatTooltipModule} from '@angular/material/tooltip';
+import { MatTooltipModule } from '@angular/material/tooltip';
 
 import { FaceSettingComponent } from './face-setting/face-setting.component';
 import { OverlayComponent } from './overlay/overlay.component';
 import { VideoMarkerComponent } from './video-marker/video-marker.component';
 import { PictureMarkerComponent } from './picture-marker/picture-marker.component';
 import { PictureHeaderComponent } from './picture-header/picture-header.component';
+import { ConfirmDialogComponent } from './shared/confirm/confirm.component';
 
 @NgModule({
     declarations: [
@@ -50,6 +51,7 @@ import { PictureHeaderComponent } from './picture-header/picture-header.componen
         VideoMarkerComponent,
         PictureMarkerComponent,
         PictureHeaderComponent,
+        ConfirmDialogComponent
     ],
     imports: [
         BrowserModule,
@@ -73,4 +75,4 @@ import { PictureHeaderComponent } from './picture-header/picture-header.componen
     providers: [],
     bootstrap: [AppComponent],
 })
-export class AppModule {}
+export class AppModule { }

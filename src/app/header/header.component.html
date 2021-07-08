@@ -1,21 +1,15 @@
-<div class="container">
+<div class="container"
+    *ngIf="{hasSelectedRegion: eventBus.videHasSelectedRegion$ | async, tagged: eventBus.videSelectedRegionHasTagged$ | async} as state">
     <div class="cell">
         <label>
             Track ID:
-            <input
-                type="number"
-                [value]="eventBus.currentTrackId$ | async"
-                (change)="trackIdChange($event)"
-            />
+            <input [disabled]="!state.tagged" type="number" [value]="eventBus.currentTrackId$ | async"
+                (change)="trackIdChange($event)" />
         </label>
     </div>
     <div class="cell">
-        <button
-            mat-stroked-button
-            color="primary"
-            title="First Key Frame"
-            (click)="changeFrame('first')"
-        >
+        <button [disabled]="!state.hasSelectedRegion" mat-stroked-button color="primary" title="First Key Frame"
+            (click)="changeFrame('first')">
             <svg>
                 <use xlink:href="#double-left-arrow"></use>
             </svg>
@@ -23,12 +17,7 @@
     </div>
 
     <div class="cell">
-        <button
-            mat-stroked-button
-            color="primary"
-            title="Previous Key Frame"
-            (click)="changeFrame('previous')"
-        >
+        <button [disabled]="!state.hasSelectedRegion" mat-stroked-button color="primary" title="Previous Key Frame" (click)="changeFrame('previous')">
             <svg>
                 <use xlink:href="#single-left-arrow"></use>
             </svg>
@@ -36,12 +25,7 @@
     </div>
 
     <div class="cell">
-        <button
-            mat-stroked-button
-            color="primary"
-            title="Next Key Frame"
-            (click)="changeFrame('next')"
-        >
+        <button [disabled]="!state.hasSelectedRegion" mat-stroked-button color="primary" title="Next Key Frame" (click)="changeFrame('next')">
             <svg class="right">
                 <use xlink:href="#single-left-arrow"></use>
             </svg>
@@ -49,12 +33,7 @@
     </div>
 
     <div class="cell">
-        <button
-            mat-stroked-button
-            color="primary"
-            title="Last Key Frame"
-            (click)="changeFrame('last')"
-        >
+        <button [disabled]="!state.hasSelectedRegion" mat-stroked-button color="primary" title="Last Key Frame" (click)="changeFrame('last')">
             <svg class="right">
                 <use xlink:href="#double-left-arrow"></use>
             </svg>
@@ -62,15 +41,8 @@
     </div>
 
     <ng-container>
-        <div
-            *ngFor="let label of eventBus.labelUpdateEvent$ | async"
-            class="cell"
-        >
-            <button
-                (click)="toggleTag(label.name)"
-                mat-raised-button
-                [style.background-color]="label.color"
-            >
+        <div *ngFor="let label of eventBus.labelUpdateEvent$ | async" class="cell">
+            <button [disabled]="!state.hasSelectedRegion" (click)="toggleTag(label.name)" mat-raised-button [style.background-color]="label.color">
                 {{ label.name }}
             </button>
         </div>
@@ -79,33 +51,21 @@
     <div class="cell">
         <label>
             Search:
-            <input
-                #search
-                type="number"
-                [value]="eventBus.currentTrackId$ | async"
-            />
+            <input #search type="number" [value]="eventBus.currentTrackId$ | async" />
         </label>
     </div>
     <div class="cell">
-        <button
-            mat-raised-button
-            color="primary"
-            (click)="searchRegion(search.value)"
-        >
+        <button mat-raised-button color="primary" (click)="searchRegion(search.value)">
             Search
         </button>
     </div>
     <div class="cell">
-        <button
-            mat-raised-button
-            color="warn"
-            (click)="deleteAll(search.value)"
-        >
+        <button [disabled]="!state.hasSelectedRegion" mat-raised-button color="warn" (click)="deleteAll(search.value)">
             Delete All
         </button>
     </div>
     <div class="cell">
-        <button mat-raised-button color="primary" (click)="queryFace()">
+        <button [disabled]="!state.hasSelectedRegion" mat-raised-button color="primary" (click)="queryFace()">
             Query Face
         </button>
     </div>

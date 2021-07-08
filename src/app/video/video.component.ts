@@ -946,6 +946,8 @@ export class VideoComponent implements OnInit, OnDestroy, OnChanges, AfterViewIn
         if (!selectedRegions[0]) return;
 
         this.event.setCurrentTrackId(selectedRegions[0].trackId);
+        this.event.updateVideoCurrentRegionTagStatus(selectedRegions[0]?.tags.length > 0);
+        this.event.updateVideoHasSelectedRegion(selectedRegions.length > 0);
     };
 
     private getSelectedRegions = (): IRegion[] => {

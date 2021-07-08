@@ -35,6 +35,8 @@ export class GlobalEventBusService {
     private pictureLabelEvent: Subject<ITag[]> = new BehaviorSubject([]);
     private exportFileEvent: Subject<boolean> = new Subject();
     private videoTimeEvent: BehaviorSubject<string> = new BehaviorSubject('00:00:00');
+    private videSelectedRegionHasTagged: BehaviorSubject<boolean> = new BehaviorSubject(false);
+    private videHasSelectedRegion: BehaviorSubject<boolean> = new BehaviorSubject(false);
 
     private frameRateUpdate: BehaviorSubject<number> = new BehaviorSubject(50);
     private selectPictureProject: Subject<IFolder> = new Subject();
@@ -75,6 +77,8 @@ export class GlobalEventBusService {
     picturePageInstance$ = this.picturePageInstance.asObservable();
     pictureUntagState$ = this.pictureUntagState.asObservable();
     goToFirstUntag$ = this.goToFirstUntag.asObservable();
+    videSelectedRegionHasTagged$ = this.videSelectedRegionHasTagged.asObservable();
+    videHasSelectedRegion$ = this.videHasSelectedRegion.asObservable();
 
     constructor() {
         const lablesText = localStorage.getItem('labels');
@@ -257,5 +261,13 @@ export class GlobalEventBusService {
 
     triggerGoToFirstUntag() {
         this.goToFirstUntag.next();
+    }
+
+    updateVideoCurrentRegionTagStatus(taged: boolean) {
+        this.videSelectedRegionHasTagged.next(taged);
+    }
+
+    updateVideoHasSelectedRegion(has: boolean) {
+        this.videHasSelectedRegion.next(has);
     }
 }

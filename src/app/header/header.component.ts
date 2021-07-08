@@ -2,6 +2,10 @@ import { ChangeDetectionStrategy, Component, OnDestroy, OnInit } from '@angular/
 import { GlobalEventBusService } from '../core/event-bus';
 import { MatSnackBar } from '@angular/material/snack-bar';
 import { Subscription } from 'rxjs';
+import { MatDialog, MatDialogRef } from '@angular/material/dialog';
+
+import { ConfirmDialogComponent } from '../shared/confirm/confirm.component';
+import { filter, tap } from 'rxjs/operators';
 
 @Component({
     selector: 'app-video-header',
@@ -15,7 +19,8 @@ export class HeaderComponent implements OnInit, OnDestroy {
 
     constructor(
         public eventBus: GlobalEventBusService,
-        private _snackBar: MatSnackBar
+        private _snackBar: MatSnackBar,
+        private dialog: MatDialog
     ) {
 
     }
@@ -42,15 +47,34 @@ export class HeaderComponent implements OnInit, OnDestroy {
     }
 
     deleteAll(trackId: string) {
-        const result = confirm(`Make sure you want to delete all region?`);
+        // const result = confirm(`Make sure you want to delete all region?`);
 
-        if (!result) return;
+        // if (!result) return;
 
-        this._snackBar.open(`Hope you know what you are doing`, '', {
-            duration: 3000
+        const addComponentRef: MatDialogRef<ConfirmDialogComponent> = this.dialog.open(ConfirmDialogComponent, {
+            disableClose: true,
+            autoFocus: false,
+            restoreFocus: false,
+            width: '400px',
+            height: '216px',
+            data: {
+                title: 'Delete Confirm',
+                context: 'Make sure you want to delete all region?'
+            },
         });
 
-        this.eventBus.deleteAllRegionsByTrackId(Number(trackId));
+        addComponentRef.afterClosed()
+            .pipe(
+                filter(confirm => confirm),
+                tap(() => {
+                    this._snackBar.open(`Hope you know what you are doing`, '', {
+                        duration: 3000
+                    });
+
+                    this.eventBus.deleteAllRegionsByTrackId(Number(trackId));
+                })
+            )
+            .subscribe();
     }
 
     queryFace() {

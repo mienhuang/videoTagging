@@ -1,0 +1,12 @@
+<header>{{data.title}}</header>
+<div class="content">
+    {{data.context}}
+</div>
+<footer>
+    <button class="cancel" slb-secondary-button (click)="closeDialog(false)">
+        Cancel
+    </button>
+    <button class="confirm" slb-button (click)="closeDialog(true)">
+        Confirm
+    </button>
+</footer>

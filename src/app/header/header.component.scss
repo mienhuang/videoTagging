@@ -5,12 +5,17 @@
     padding: 0 10px;
     background-color: var(--color-gray-f1);
 
+    button, input {
+        &:disabled {
+            cursor: not-allowed;
+        }
+    }
+
     .cell {
         margin-right: 10px;
         font-weight: 600;
 
         svg {
-            cursor: pointer;
             height: 26px;
             width: 26px;
             fill: var(--color-light-gray);
