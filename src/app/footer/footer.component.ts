@@ -1,6 +1,6 @@
 import { ChangeDetectionStrategy, ChangeDetectorRef, Component, OnDestroy, OnInit } from '@angular/core';
 import { merge, Observable, Subscription } from 'rxjs';
-import { filter, tap } from 'rxjs/operators';
+import { filter, map, startWith, tap } from 'rxjs/operators';
 import { KeyboardEventService } from '../core/keyboard-event';
 import { GlobalEventBusService } from '../core/event-bus';
 import { IRegionInfo } from '../core/models/region.model';
@@ -16,7 +16,7 @@ import { MatSnackBar } from '@angular/material/snack-bar';
 export class FooterComponent implements OnInit, OnDestroy {
     stepLegth = 1;
     info: Observable<IRegionInfo>;
-    public currentRoute = 'picture';
+    public currentRoute: Observable<string>;
     public hasUntagRegion = false;
 
     private readonly maxStepLenght = 16;
@@ -47,23 +47,22 @@ export class FooterComponent implements OnInit, OnDestroy {
             this.cdr.markForCheck();
         });
 
-        const routEndSub = this.router.events
+        this.currentRoute = this.router.events
             .pipe(
                 filter((e: RouterEvent) => e instanceof NavigationEnd),
-                tap(({ url }: NavigationEnd) => {
+                map(({ url }: NavigationEnd) => {
+                    console.log(url, 'uuuuuuuuuuuuuuu');
                     switch (url) {
                         case '/picture':
-                            this.currentRoute = 'picture';
-                            break;
+                            return 'picture';
                         case '/video':
-                            this.currentRoute = 'video';
-                            break;
+                            return 'video';
                         default:
-                            break;
+                            return 'picture';
                     }
-                })
-            )
-            .subscribe();
+                }),
+                startWith('picture')
+            );
 
         const untagRegionSub = this.event.pictureUntagState$
             .pipe(
@@ -76,12 +75,11 @@ export class FooterComponent implements OnInit, OnDestroy {
 
         this.info = this.event.regionInfo$;
 
-        this._sub.add(routEndSub);
         this._sub.add(upDownSub);
         this._sub.add(untagRegionSub);
     }
 
-    ngOnInit(): void {}
+    ngOnInit(): void { }
 
     goToFirstUntagPicture() {
         if (!this.hasUntagRegion) {

@@ -34,12 +34,12 @@
             cursor: pointer;
 
             &.active {
-                background-color: var(--color-purpole);
+                background-color: var(--color-blue);
                 color: var(--color-white);
             }
 
             &:hover {
-                background-color: var(--color-purpole);
+                background-color: var(--color-blue);
                 color: var(--color-white);
             }
         }

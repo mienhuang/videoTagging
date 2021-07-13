@@ -1,5 +1,5 @@
 <footer>
-    <ng-container *ngIf="currentRoute === 'video'">
+    <ng-container *ngIf="(currentRoute | async) === 'video'">
         <div class="left">
             <div class="text">
                 Simple Rate: <span class="value">{{ event.frameRateUpdate$ | async }}</span>
@@ -24,7 +24,7 @@
             </ng-container>
         </div>
     </ng-container>
-    <ng-container *ngIf="currentRoute === 'picture'">
+    <ng-container *ngIf="(currentRoute | async) === 'picture'">
         <div class="left">
             <div class="text">
                 <svg>

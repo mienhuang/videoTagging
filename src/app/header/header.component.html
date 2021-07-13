@@ -8,35 +8,27 @@
         </label>
     </div>
     <div class="cell">
-        <button [disabled]="!state.hasSelectedRegion" mat-stroked-button color="primary" title="First Key Frame"
+        <button [disabled]="!state.hasSelectedRegion" mat-stroked-button class="secondary frame-control" title="First Key Frame"
             (click)="changeFrame('first')">
-            <svg>
-                <use xlink:href="#double-left-arrow"></use>
-            </svg>
+            First
         </button>
     </div>
 
     <div class="cell">
-        <button [disabled]="!state.hasSelectedRegion" mat-stroked-button color="primary" title="Previous Key Frame" (click)="changeFrame('previous')">
-            <svg>
-                <use xlink:href="#single-left-arrow"></use>
-            </svg>
+        <button [disabled]="!state.hasSelectedRegion" mat-stroked-button class="secondary frame-control" title="Previous Key Frame" (click)="changeFrame('previous')">
+            Previous
         </button>
     </div>
 
     <div class="cell">
-        <button [disabled]="!state.hasSelectedRegion" mat-stroked-button color="primary" title="Next Key Frame" (click)="changeFrame('next')">
-            <svg class="right">
-                <use xlink:href="#single-left-arrow"></use>
-            </svg>
+        <button [disabled]="!state.hasSelectedRegion" mat-stroked-button class="secondary frame-control" title="Next Key Frame" (click)="changeFrame('next')">
+            Next
         </button>
     </div>
 
     <div class="cell">
-        <button [disabled]="!state.hasSelectedRegion" mat-stroked-button color="primary" title="Last Key Frame" (click)="changeFrame('last')">
-            <svg class="right">
-                <use xlink:href="#double-left-arrow"></use>
-            </svg>
+        <button [disabled]="!state.hasSelectedRegion" mat-stroked-button class="secondary frame-control" title="Last Key Frame" (click)="changeFrame('last')">
+            Last
         </button>
     </div>
 
@@ -55,17 +47,17 @@
         </label>
     </div>
     <div class="cell">
-        <button mat-raised-button color="primary" (click)="searchRegion(search.value)">
+        <button class="primary" mat-raised-button (click)="searchRegion(search.value)">
             Search
         </button>
     </div>
     <div class="cell">
         <button [disabled]="!state.hasSelectedRegion" mat-raised-button color="warn" (click)="deleteAll(search.value)">
             Delete All
-        </button>
+        </button> 
     </div>
     <div class="cell">
-        <button [disabled]="!state.hasSelectedRegion" mat-raised-button color="primary" (click)="queryFace()">
+        <button class="primary" [disabled]="!state.hasSelectedRegion" mat-raised-button (click)="queryFace()">
             Query Face
         </button>
     </div>
