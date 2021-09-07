@@ -37,7 +37,7 @@ export class PictureMarkerComponent implements OnInit, OnDestroy {
     private frameHeight = 0;
     private frameWidth = 0;
     private selectedRegions: IPictureRegion[] = [];
-    private tags: ITag[] = [{ name: 'face', color: '#ff22ff' }];
+    private tags: ITag[] = [];
     private pictures = {};
     private currentFolderInfo: IFolder = {
         folder: '',
@@ -60,6 +60,29 @@ export class PictureMarkerComponent implements OnInit, OnDestroy {
         private cdRef: ChangeDetectorRef,
         private keyboardEvent: KeyboardEventService
     ) {
+        const labelFileSelectedSub = this.eventBus.pictureLabelSelected$
+            .pipe(
+                filter(() => Boolean(this.project)),
+                tap((labels: Array<ITag>) => {
+                    this.project = {
+                        ...this.project,
+                        labels
+                    };
+                    this.tags = labels;
+                    this.recentLabels = this.tags.slice(0, 5);
+                }),
+                switchMap((labels: Array<ITag>) =>
+                    this.eventBus.saveFile({
+                        path: `${this.project.path}picture.vt`,
+                        contents: JSON.stringify({
+                            ...this.project,
+                            labels
+                        }),
+                    })
+                )
+            )
+            .subscribe();
+
         const exportSub = this.eventBus.exportFileEvent$
             .pipe(
                 tap(() => {
@@ -192,8 +215,15 @@ export class PictureMarkerComponent implements OnInit, OnDestroy {
                     }
 
                     let target = this.tags.find((tag) => tag.name === type);
+
                     if (!target) {
-                        target = { name: type, color: CanvasHelpers.getColor() };
+                        // TODO: shoud not allow user manual add a new TAG
+                        target = {
+                            id: `user-${type}`,
+                            name: type,
+                            color: CanvasHelpers.getColor(),
+                            properties: []
+                        };
                     }
                     this.tags = [...new Set([target, ...this.tags])];
                     this.recentLabels = this.tags.slice(0, 5);
@@ -271,6 +301,7 @@ export class PictureMarkerComponent implements OnInit, OnDestroy {
         this.sub.add(indexSub);
         this.sub.add(saveDataSub);
         this.sub.add(exportSub);
+        this.sub.add(labelFileSelectedSub);
     }
 
     ngOnInit(): void {

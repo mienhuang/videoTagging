@@ -1,6 +1,7 @@
 import { ChangeDetectionStrategy, Component, OnInit } from '@angular/core';
 import { GlobalEventBusService } from '../core/event-bus';
 import CanvasHelpers from '../core/canvasHelpers';
+import { map, take, tap } from 'rxjs/operators';
 @Component({
     selector: 'app-settings-dialog',
     templateUrl: './settings-dialog.component.html',
@@ -12,7 +13,7 @@ export class SettingsDialogComponent implements OnInit {
     labelValue = '';
     frameRate = 50;
 
-    constructor(private eventBus: GlobalEventBusService) {}
+    constructor(private eventBus: GlobalEventBusService) { }
 
     ngOnInit(): void {
         this.getLabels();
@@ -53,6 +54,19 @@ export class SettingsDialogComponent implements OnInit {
 
     resetApplication() {
         localStorage.clear();
+    }
+
+    onLabelFileSelected(event: any) {
+        const path = event.target.files[0].path;
+        this.eventBus.readFile(path)
+            .pipe(
+                take(1),
+                map(data => JSON.parse(data)),
+                tap((labels) => {
+                    this.eventBus.setPictureLabelsFromFile(labels);
+                })
+            )
+            .subscribe();
     }
 
     addressChange(e) {

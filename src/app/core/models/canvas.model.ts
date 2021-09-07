@@ -1,6 +1,25 @@
 export interface ITag {
+    id?: string;
     name: string;
     color: string;
+    properties?: Array<Iproperty>;
+}
+
+export enum IpropertyType {
+    SELECT = 'select',
+    INPUT = 'input'
+}
+
+export interface IOption {
+    text: string;
+    value: string;
+}
+
+export interface Iproperty {
+    id: string;
+    name: string;
+    type: IpropertyType;
+    options?: Array<IOption>;
 }
 
 export interface IAsset {

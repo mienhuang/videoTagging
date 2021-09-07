@@ -1,4 +1,4 @@
-export interface ISaveFile {
+export interface ISavingFile {
     path: string;
     contents: string;
 }

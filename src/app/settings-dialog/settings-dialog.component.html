@@ -1,16 +1,26 @@
 <mat-tab-group>
-    <mat-tab label="System Settings">
+    <mat-tab label="图片标注设置">
         <div class="system-settings">
             <div class="cell">
-                <label for="frame-rate"> Frame Rate: </label>
+                <label for="image-tab-list"> 标签文件导入: </label>
+                <button mat-raised-button (click)="lableInput.click()">选择文件</button>
+                <input class="lable-input" #lableInput type="file" accept=".json" (change)="onLabelFileSelected($event)">
+            </div>
+        </div>
+    </mat-tab>
+    <mat-tab label="视频标注设置">
+        <div class="system-settings">
+            <div class="cell">
+                <label for="frame-rate"> 采样率: </label>
                 <input #rate id="frame-rate" [value]="frameRate" type="number" min="0" max="60" />
-                <button class="update" (click)="updateFrameRate(rate.value)" mat-raised-button color="primary">Update</button>
-                <span class="warn">update frame rate will clean all the data for current video</span>
+                <button class="update" (click)="updateFrameRate(rate.value)" mat-raised-button
+                    color="primary">更新</button>
+                <span class="warn">更新采样率会清除当前视频下所有标注框</span>
             </div>
             <div class="cell">
-                <label for="labes"> Labels: </label>
+                <label for="labes"> 标签: </label>
                 <input id="labes" [value]="labelValue" (change)="updateLabel($event)" class="frame-rate" type="text" />
-                <button class="update" mat-raised-button color="primary" (click)="addLabel()">Add</button>
+                <button class="update" mat-raised-button color="primary" (click)="addLabel()">增加</button>
 
                 <div class="labels">
                     <div *ngFor="let label of labels; index as i" class="label">
@@ -21,24 +31,26 @@
                     </div>
                 </div>
             </div>
-            <div class="cell">
-                <label for="image-tab-list"> Reset: </label>
-                <button mat-raised-button color="warn" (click)="resetApplication()">Reset Application</button>
-            </div>
         </div>
     </mat-tab>
-    <mat-tab label="Server Settings">
+    <mat-tab label="应用设置">
         <div class="server-settings">
-            <div class="">
-                <h3>Image Query Server Settings</h3>
-                <div class="cell">
-                    <label for="image-address"> Address: </label>
-                    <input id="image-address" (change)="addressChange($event)" type="text" />
-                </div>
-                <div class="cell">
-                    <label for="image-tab-list"> TabIDList: </label>
-                    <input id="image-tab-list" (change)="tabIdChange($event)" type="text" />
-                </div>
+
+            <h3>图片查询服务器设置：</h3>
+            <div class="cell">
+                <label for="image-address"> 服务器地址： </label>
+                <input id="image-address" (change)="addressChange($event)" type="text" />
+            </div>
+            <div class="cell">
+                <label for="image-tab-list"> TabIDList: </label>
+                <input id="image-tab-list" (change)="tabIdChange($event)" type="text" />
+            </div>
+        </div>
+        <div class="server-settings">
+            <h3>系统设置：</h3>
+            <div class="cell">
+                <label for="image-tab-list"> 重置: </label>
+                <button mat-raised-button color="warn" (click)="resetApplication()">重置软件</button>
             </div>
         </div>
     </mat-tab>

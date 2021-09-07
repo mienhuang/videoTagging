@@ -26,15 +26,17 @@ const defaultPictureText = `{
 
 class FileService {
     removeAttach() {
-        ipcMain.off('save_file', this.saveFileCb);
-        ipcMain.off('read_file', this.readFileCb);
+        ipcMain.off('save_project_file', this.saveProjectFileCb);
+        ipcMain.off('read_project_file', this.readProjectFileCb);
         ipcMain.off('read_pictures', this.readPicturesCb);
+        ipcMain.off('read_file', this.readFileCb);
     }
 
     attch() {
-        ipcMain.on('save_file', this.saveFileCb);
-        ipcMain.on('read_file', this.readFileCb);
+        ipcMain.on('save_project_file', this.saveProjectFileCb);
+        ipcMain.on('read_project_file', this.readProjectFileCb);
         ipcMain.on('read_pictures', this.readPicturesCb);
+        ipcMain.on('read_file', this.readFileCb);
     }
 
     readText(filePath) {
@@ -101,7 +103,7 @@ class FileService {
         });
     }
 
-    saveFileCb = (event, arg) => {
+    saveProjectFileCb = (event, arg) => {
         console.log(arg.path);
         const path = arg.path;
         const topic = arg.topic;
@@ -111,7 +113,7 @@ class FileService {
         });
     };
 
-    readFileCb = (event, arg) => {
+    readProjectFileCb = (event, arg) => {
         const { path, name, topic } = arg;
         const file = `${path}${name.split('.')[0]}.vt`;
         if (fs.existsSync(file)) {
@@ -124,6 +126,13 @@ class FileService {
 
         this.writeText(file, defaultText).then(() => {
             event.reply(topic, defaultText);
+        });
+    };
+
+    readFileCb = (event, arg) => {
+        const { path, topic } = arg;
+        this.readText(path).then((data) => {
+            event.reply(topic, data);
         });
     };
 

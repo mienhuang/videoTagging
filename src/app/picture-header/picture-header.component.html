@@ -3,7 +3,7 @@
         <form class="example-form">
             <mat-form-field class="example-full-width">
                 <input type="text" matInput [formControl]="pictureLabelControl" [matAutocomplete]="auto" />
-                <mat-autocomplete #auto="matAutocomplete" [displayWith]="displayFn">
+                <mat-autocomplete #auto="matAutocomplete" [displayWith]="displayFn" (optionSelected)="onPictureLabelSelected($event)">
                     <mat-option *ngFor="let option of filteredOptions | async" [value]="option">
                         {{ option.name }}
                     </mat-option>

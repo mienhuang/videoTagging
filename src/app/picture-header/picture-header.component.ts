@@ -1,5 +1,6 @@
 import { Component, OnDestroy, OnInit } from '@angular/core';
 import { FormControl } from '@angular/forms';
+import { MatAutocompleteSelectedEvent } from '@angular/material/autocomplete';
 import { MatSnackBar } from '@angular/material/snack-bar';
 import { merge, Observable, Subscription } from 'rxjs';
 import { map, mapTo, startWith, tap } from 'rxjs/operators';
@@ -22,7 +23,7 @@ export class PictureHeaderComponent implements OnInit, OnDestroy {
     constructor(public eventBus: GlobalEventBusService, private _snackBar: MatSnackBar) {
         this.filteredOptions = merge(
             this.pictureLabelControl.valueChanges,
-            this.eventBus.pictureLables$.pipe(
+            this.eventBus.pictureLabels$.pipe(
                 tap((labels: ITag[]) => {
                     this.options = labels;
                 }),
@@ -35,7 +36,7 @@ export class PictureHeaderComponent implements OnInit, OnDestroy {
         );
     }
 
-    ngOnInit(): void {}
+    ngOnInit(): void { }
 
     displayFn(tag: ITag): string {
         return tag && tag.name ? tag.name : '';
@@ -52,6 +53,10 @@ export class PictureHeaderComponent implements OnInit, OnDestroy {
 
     changePicture(offset: number) {
         this.eventBus.updatePictureIndex(offset);
+    }
+
+    onPictureLabelSelected(event: MatAutocompleteSelectedEvent) {
+        console.log(event);
     }
 
     ngOnDestroy() {

@@ -6,12 +6,13 @@ import { ITag } from './models/canvas.model';
 import { timeStamp } from 'console';
 import { IFile, IFolder, IPictureInfo, IPictureUntagState } from './models/picture.model';
 import { map, tap } from 'rxjs/operators';
-import { ISaveFile } from './models/file.model';
+import { ISavingFile } from './models/file.model';
 import shortid from 'shortid';
 
 @Injectable({ providedIn: 'root' })
 export class GlobalEventBusService {
     ipcRenderer = (window as any).require('electron').ipcRenderer;
+    // Video
     private resize = new Subject();
     private videoSelected = new Subject();
     private tagChange = new Subject();
@@ -38,15 +39,17 @@ export class GlobalEventBusService {
     private videSelectedRegionHasTagged: BehaviorSubject<boolean> = new BehaviorSubject(false);
     private videHasSelectedRegion: BehaviorSubject<boolean> = new BehaviorSubject(false);
 
+    // Picture
     private frameRateUpdate: BehaviorSubject<number> = new BehaviorSubject(50);
     private selectPictureProject: Subject<IFolder> = new Subject();
-    private pictureLables: Subject<ITag[]> = new Subject();
+    private pictureLabels: Subject<ITag[]> = new Subject();
     private pictureIndexOffset: Subject<number> = new Subject();
     private pictureIndexChange: Subject<number> = new Subject();
     private goToFirstUntag: Subject<void> = new Subject();
     private picturePath: BehaviorSubject<string> = new BehaviorSubject('');
     private pictureUntagState: BehaviorSubject<boolean> = new BehaviorSubject(false);
     private picturePageInstance: BehaviorSubject<string> = new BehaviorSubject('0 : 0');
+    private pictureLabelSelected: BehaviorSubject<any> = new BehaviorSubject([]);
 
     resize$ = this.resize.asObservable();
     videoSelected$ = this.videoSelected.asObservable();
@@ -70,7 +73,7 @@ export class GlobalEventBusService {
 
     pictureLabelEvent$ = this.pictureLabelEvent.asObservable();
     selectPictureProject$ = this.selectPictureProject.asObservable();
-    pictureLables$ = this.pictureLables.asObservable();
+    pictureLabels$ = this.pictureLabels.asObservable();
     pictureIndexOffset$ = this.pictureIndexOffset.asObservable();
     picturePath$ = this.picturePath.asObservable();
     pictureIndexChange$ = this.pictureIndexChange.asObservable();
@@ -79,6 +82,7 @@ export class GlobalEventBusService {
     goToFirstUntag$ = this.goToFirstUntag.asObservable();
     videSelectedRegionHasTagged$ = this.videSelectedRegionHasTagged.asObservable();
     videHasSelectedRegion$ = this.videHasSelectedRegion.asObservable();
+    pictureLabelSelected$ = this.pictureLabelSelected.asObservable();
 
     constructor() {
         const lablesText = localStorage.getItem('labels');
@@ -87,7 +91,7 @@ export class GlobalEventBusService {
     }
 
     setPictureLabels(lables: ITag[]) {
-        this.pictureLables.next(lables);
+        this.pictureLabels.next(lables);
     }
 
     onResize(size: { width: number; height: number }) {
@@ -125,16 +129,32 @@ export class GlobalEventBusService {
         this.currentTrackId.next(id);
     }
 
-    saveFile(data: ISaveFile): Observable<any> {
+    saveFile(data: ISavingFile): Observable<any> {
         const _ = new Subject();
         const topic = shortid.generate();
 
         this.ipcRenderer.on(topic, (event, arg) => {
             _.next(arg);
         });
-        this.ipcRenderer.send('save_file', {
+        this.ipcRenderer.send('save_project_file', {
             ...data,
             topic,
+        });
+
+        return _;
+    }
+
+    readFile(path: string): Observable<any> {
+        const _ = new Subject();
+        const topic = shortid.generate();
+
+        this.ipcRenderer.on(topic, (event, arg) => {
+            _.next(arg);
+        });
+
+        this.ipcRenderer.send('read_file', {
+            topic,
+            path,
         });
 
         return _;
@@ -148,7 +168,7 @@ export class GlobalEventBusService {
             _.next(arg);
         });
 
-        this.ipcRenderer.send('read_file', {
+        this.ipcRenderer.send('read_project_file', {
             topic,
             path,
             name,
@@ -269,5 +289,9 @@ export class GlobalEventBusService {
 
     updateVideoHasSelectedRegion(has: boolean) {
         this.videHasSelectedRegion.next(has);
+    }
+
+    setPictureLabelsFromFile(labels: Array<ITag>) {
+        this.pictureLabelSelected.next(labels);
     }
 }
