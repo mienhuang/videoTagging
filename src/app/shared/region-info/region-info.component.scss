@@ -1,0 +1,12 @@
+:host {
+    display: flex;
+    flex: 1;
+}
+
+.container {
+    flex: 1;
+
+    .title {
+        text-align: center;
+    }
+}

@@ -15,6 +15,7 @@ export interface IPictureProject {
     path: string;
     files: IFile[];
     labels: ITag[];
+    labelFile: ITag[];
     fileNameMap: IObject;
     pictureResult: IObject;
     fullName: string;

@@ -8,6 +8,17 @@
     display: flex;
     flex-direction: column;
 
+    .marking-container {
+        height: calc(100vh - 76px);
+        width: calc(100vw - 60px);
+        display: flex;
+
+        .region-panel {
+            width: 300px;
+            display: flex;
+        }
+    }
+
     .marking-area {
         height: calc(100vh - 76px);
         width: calc(100vw - 60px);

@@ -91,6 +91,7 @@ export class GlobalEventBusService {
     }
 
     setPictureLabels(lables: ITag[]) {
+        console.log('set picture labels....', lables)
         this.pictureLabels.next(lables);
     }
 

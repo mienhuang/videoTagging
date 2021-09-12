@@ -33,6 +33,8 @@ export class PictureMarkerComponent implements OnInit, OnDestroy {
     public editingPicture: SafeUrl = '';
     public editingPictureInfo: IFile = {} as IFile;
     public markingSize: { height: number; width: number } = { height: 10, width: 10 };
+    public currentLabel: ITag;
+
     private editor: Editor;
     private frameHeight = 0;
     private frameWidth = 0;
@@ -435,16 +437,18 @@ export class PictureMarkerComponent implements OnInit, OnDestroy {
     };
 
     private onSelectedRegionsChanged = (selectedRegions: IPictureRegion[]) => {
-        // INFO: create a new region also will trigger here.
-        // console.log(selectedRegions, 'selected regions');
-        // const ids = selectedRegions.map((region) => ({ trackId: region.trackId, id: region.id }));
-        // this._customData.currentTrackId = [...ids];
-        // this.props.customDataActions.updateCurrentTrackId([...ids]);
         this.selectedRegions = selectedRegions;
 
-        if (!selectedRegions[0]) return;
+        if (this.selectedRegions.length === 0) return;
 
-        // this.event.setCurrentTrackId(selectedRegions[0].trackId);
+        const region = this.selectedRegions[0];
+
+        if (region.tags.length === 0) return;
+
+        const tag = region.tags[0];
+
+        this.currentLabel = this.tags.find(_ => _.name = tag);
+        console.log(this.currentLabel, 'this.currentLabel????????????')
     };
 
     private editorModeToType = (editorMode: EditorMode) => {

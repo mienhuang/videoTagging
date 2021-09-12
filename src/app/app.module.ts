@@ -27,6 +27,7 @@ import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatAutocompleteModule } from '@angular/material/autocomplete';
 import { MatInputModule } from '@angular/material/input';
 import { MatTooltipModule } from '@angular/material/tooltip';
+import { MatSelectModule } from '@angular/material/select';
 
 import { FaceSettingComponent } from './face-setting/face-setting.component';
 import { OverlayComponent } from './overlay/overlay.component';
@@ -34,6 +35,7 @@ import { VideoMarkerComponent } from './video-marker/video-marker.component';
 import { PictureMarkerComponent } from './picture-marker/picture-marker.component';
 import { PictureHeaderComponent } from './picture-header/picture-header.component';
 import { ConfirmDialogComponent } from './shared/confirm/confirm.component';
+import { RegionInfoComponent } from './shared/region-info/region-info.component';
 
 @NgModule({
     declarations: [
@@ -51,7 +53,8 @@ import { ConfirmDialogComponent } from './shared/confirm/confirm.component';
         VideoMarkerComponent,
         PictureMarkerComponent,
         PictureHeaderComponent,
-        ConfirmDialogComponent
+        ConfirmDialogComponent,
+        RegionInfoComponent
     ],
     imports: [
         BrowserModule,
@@ -70,7 +73,8 @@ import { ConfirmDialogComponent } from './shared/confirm/confirm.component';
         MatInputModule,
         FormsModule,
         ReactiveFormsModule,
-        MatTooltipModule
+        MatTooltipModule,
+        MatSelectModule
     ],
     providers: [],
     bootstrap: [AppComponent],
