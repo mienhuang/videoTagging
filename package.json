@@ -49,6 +49,7 @@
         "@angular/platform-browser-dynamic": "~9.0.6",
         "@angular/router": "~9.0.6",
         "@types/snapsvg": "^0.5.0",
+        "clone": "^2.1.2",
         "image-size": "^1.0.0",
         "rxjs": "~6.5.4",
         "shortid": "^2.2.15",

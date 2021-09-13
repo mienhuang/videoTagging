@@ -12,7 +12,7 @@
         </form>
     </div>
     <div class="cell">
-        <button mat-stroked-button color="primary" (click)="setTag()">Set Tag</button>
+        <button mat-stroked-button color="primary" (click)="setTag()">设置标签</button>
     </div>
 
     <div class="cell">
@@ -33,7 +33,7 @@
 
     <ng-container>
         <div *ngFor="let label of eventBus.pictureLabelEvent$ | async" class="cell">
-            <button (click)="toggleTag(label.name)" mat-raised-button [style.background-color]="label.color">
+            <button [title]="label.name" class="label-button" (click)="toggleTag(label.name)" mat-raised-button [style.background-color]="label.color">
                 {{ label.name }}
             </button>
         </div>

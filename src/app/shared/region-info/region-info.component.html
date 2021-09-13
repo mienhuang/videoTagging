@@ -1,14 +1,23 @@
 <div class="container">
-    <h2 class="title">title</h2>
+    <h2 class="title">{{label?.name || '未选中选择框'}}</h2>
     <div class="content">
-        <div class="cell" *ngFor="let property of label.properties; let i=index;">
-            <mat-form-field class="">
-                <mat-select>
-                    <mat-option *ngFor="let option of property.options" [value]="option.value">
-                        {{option.text}}
-                    </mat-option>
-                </mat-select>
-            </mat-form-field>
+        <div class="cell" *ngFor="let property of label?.properties; let i=index;">
+            <ng-container *ngIf="property.type === 'select'">
+                <mat-form-field class="field">
+                    <h4>{{property.name}}</h4>
+                    <mat-select [value]="values[property.id] || ''" (selectionChange)="onSelectionChange($event, property)">
+                        <mat-option *ngFor="let option of property.options" [value]="option.value">
+                            {{option.text}}
+                        </mat-option>
+                    </mat-select>
+                </mat-form-field>
+            </ng-container>
+            <ng-container *ngIf="property.type === 'input'">
+                <mat-form-field class="field">
+                    <h4>{{property.name}}</h4>
+                    <input matInput [value]="values[property.id] || ''" (blur)=" onInputChange($event, property)">
+                </mat-form-field>
+            </ng-container>
         </div>
     </div>
 </div>

@@ -33,7 +33,8 @@ export class PictureMarkerComponent implements OnInit, OnDestroy {
     public editingPicture: SafeUrl = '';
     public editingPictureInfo: IFile = {} as IFile;
     public markingSize: { height: number; width: number } = { height: 10, width: 10 };
-    public currentLabel: ITag;
+    public currentLabel: Subject<ITag> = new Subject();
+    public currentLabelValues: Subject<{ [key: string]: string }> = new Subject();
 
     private editor: Editor;
     private frameHeight = 0;
@@ -66,19 +67,25 @@ export class PictureMarkerComponent implements OnInit, OnDestroy {
             .pipe(
                 filter(() => Boolean(this.project)),
                 tap((labels: Array<ITag>) => {
+                    this.tags = labels.map((label: ITag) => ({
+                        ...label,
+                        color: CanvasHelpers.getColor(),
+                    }));
+
                     this.project = {
                         ...this.project,
-                        labels
+                        labels: this.tags
                     };
-                    this.tags = labels;
                     this.recentLabels = this.tags.slice(0, 5);
+                    this.eventBus.setPictureLabels(this.tags);
+                    this.eventBus.setPictureRecentLabels(this.recentLabels);
                 }),
                 switchMap((labels: Array<ITag>) =>
                     this.eventBus.saveFile({
                         path: `${this.project.path}picture.vt`,
                         contents: JSON.stringify({
                             ...this.project,
-                            labels
+                            labels: this.tags
                         }),
                     })
                 )
@@ -227,6 +234,7 @@ export class PictureMarkerComponent implements OnInit, OnDestroy {
                             properties: []
                         };
                     }
+
                     this.tags = [...new Set([target, ...this.tags])];
                     this.recentLabels = this.tags.slice(0, 5);
                     this.project.labels = this.tags;
@@ -318,6 +326,13 @@ export class PictureMarkerComponent implements OnInit, OnDestroy {
 
         const loadProjectSub = this.loadProject(path, []).subscribe();
         this.sub.add(loadProjectSub);
+    }
+
+    onPropertyChange(event: { key: string, value: string }) {
+        const region = this.selectedRegions[0];
+        if (!region) return;
+
+        region[event.key] = event.value;
     }
 
     ngOnDestroy(): void {
@@ -445,10 +460,15 @@ export class PictureMarkerComponent implements OnInit, OnDestroy {
 
         if (region.tags.length === 0) return;
 
-        const tag = region.tags[0];
+        const tag = this.tags.find(_ => _.name === region.tags[0]);
+        this.currentLabel.next(tag);
 
-        this.currentLabel = this.tags.find(_ => _.name = tag);
-        console.log(this.currentLabel, 'this.currentLabel????????????')
+        const values = {};
+
+        tag.properties.forEach(property => {
+            values[property.id] = region[property.id];
+        });
+        this.currentLabelValues.next(values);
     };
 
     private editorModeToType = (editorMode: EditorMode) => {
@@ -474,7 +494,7 @@ export class PictureMarkerComponent implements OnInit, OnDestroy {
     };
 
     private updateRegion(region: IPictureRegion) {
-        console.log(region, '////////////');
+        console.log(region, 'region data on update region');
         const description = CanvasHelpers.getPictureTagsDescriptor(this.tags, region, region.tags[0]);
 
         this.editor.RM.updateTagsById(region.id, description);
