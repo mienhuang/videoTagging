@@ -281,7 +281,11 @@ export class PictureMarkerComponent implements OnInit, OnDestroy {
                     this.project.currentEditingIndex = target;
                     this.loadPicture();
                 }),
-                tap(() => this.saveProject.next(true))
+                tap(() => this.saveProject.next(true)),
+                tap(() => {
+                    this.currentLabelValues.next({});
+                    this.currentLabel.next(null);
+                })
             )
             .subscribe();
 
