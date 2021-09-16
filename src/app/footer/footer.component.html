@@ -34,6 +34,9 @@
             </div>
         </div>
         <div class="right">
+            <div class="text selection-toggle" (click)="changeSelectionType()">
+                {{currentSelectionType === 5 ? '多边形形选择器':'矩形选择器'}}
+            </div>
             <div class="text">{{ event.picturePageInstance$ | async }}</div>
             <div *ngIf="event.pictureUntagState$ | async" class="text clickable" (click)="goToFirstUntagPicture()" matTooltip="Has Untaged Region">
                 <svg>

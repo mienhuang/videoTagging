@@ -13,7 +13,7 @@ import { Editor } from 'vott-ct/lib/js/CanvasTools/CanvasTools.Editor';
 // import Clipboard from '../../../../common/clipboard';
 // import Confirm from '../../common/confirm/confirm';
 // import { strings } from '../../../../common/strings';
-// import { SelectionMode } from 'vott-ct/lib/js/CanvasTools/Interface/ISelectorSettings';
+import { SelectionMode } from 'vott-ct/lib/js/CanvasTools/Interface/ISelectorSettings';
 import { Rect } from 'vott-ct/lib/js/CanvasTools/Core/Rect';
 import CanvasHelpers from '../core/canvasHelpers';
 import { IPictureRegion } from '../core/models/canvas.model';
@@ -53,6 +53,7 @@ export class PictureMarkerComponent implements OnInit, OnDestroy {
     private readonly lockedTags = [];
     private sub = new Subscription();
     private saveProject = new Subject();
+    private currentSelecttionMode: SelectionMode;
 
     @ViewChild('markingArea', { static: true }) markingArea: ElementRef;
 
@@ -63,6 +64,14 @@ export class PictureMarkerComponent implements OnInit, OnDestroy {
         private cdRef: ChangeDetectorRef,
         private keyboardEvent: KeyboardEventService
     ) {
+        const pictureSelectionModeSub = this.eventBus.pictureSelectionMode$.pipe(
+            tap((mode: SelectionMode) => this.currentSelecttionMode = mode),
+            filter(() => Boolean(this.editor)),
+            tap((mode: SelectionMode) => {
+                this.addCTEditor(mode);
+            })
+        ).subscribe();
+
         const labelFileSelectedSub = this.eventBus.pictureLabelSelected$
             .pipe(
                 filter(() => Boolean(this.project)),
@@ -316,10 +325,11 @@ export class PictureMarkerComponent implements OnInit, OnDestroy {
         this.sub.add(saveDataSub);
         this.sub.add(exportSub);
         this.sub.add(labelFileSelectedSub);
+        this.sub.add(pictureSelectionModeSub);
     }
 
     ngOnInit(): void {
-        this.addCTEditor();
+        this.addCTEditor(this.currentSelecttionMode);
         this.frameHeight = this.markingArea.nativeElement.clientHeight;
         this.frameWidth = this.markingArea.nativeElement.clientWidth;
 
@@ -390,22 +400,20 @@ export class PictureMarkerComponent implements OnInit, OnDestroy {
         );
     }
 
-    private addCTEditor() {
-        if (this.editor) {
-            return;
+    private addCTEditor(mode: SelectionMode = SelectionMode.RECT) {
+        if (!this.editor) {
+            const editorContainer = document.getElementById('picture-div') as HTMLDivElement;
+
+            this.editor = new CanvasTools.Editor(editorContainer).api;
+            this.editor.autoResize = false;
+            this.editor.onSelectionEnd = this.onSelectionEnd;
+            this.editor.onRegionMoveEnd = this.onRegionMoveEnd;
+            this.editor.onRegionDelete = this.onRegionDelete;
+            this.editor.onRegionSelected = this.onRegionSelected;
+            this.editor.AS.resize(this.frameHeight, this.frameWidth);
         }
 
-        const editorContainer = document.getElementById('picture-div') as HTMLDivElement;
-
-        this.editor = new CanvasTools.Editor(editorContainer).api;
-        this.editor.autoResize = false;
-        this.editor.onSelectionEnd = this.onSelectionEnd;
-        this.editor.onRegionMoveEnd = this.onRegionMoveEnd;
-        this.editor.onRegionDelete = this.onRegionDelete;
-        this.editor.onRegionSelected = this.onRegionSelected;
-        this.editor.AS.resize(this.frameHeight, this.frameWidth);
-
-        // this.editor.AS.setSelectionMode({ mode: SelectionMode });
+        this.editor.AS.setSelectionMode({ mode });
     }
 
     private onSelectionEnd = (regionData: RegionData) => {
@@ -433,10 +441,11 @@ export class PictureMarkerComponent implements OnInit, OnDestroy {
         const defaultDescription = CanvasHelpers.getDefaultDescriptor();
 
         this.editor.RM.addRegion(id, regionData, defaultDescription);
+        const type = this.mapSelectionModeToEditorMode(this.currentSelecttionMode);
 
         const newRegion: IPictureRegion = {
             id,
-            type: this.editorModeToType(EditorMode.Rectangle),
+            type: this.editorModeToType(type),
             tags: [],
             boundingBox: {
                 height,
@@ -454,6 +463,35 @@ export class PictureMarkerComponent implements OnInit, OnDestroy {
 
         this.editor.RM.selectRegionById(id);
     };
+
+    private mapSelectionModeToEditorMode = (selectionMode: SelectionMode): EditorMode => {
+        let mode: EditorMode = EditorMode.Rectangle;
+        switch (selectionMode) {
+            case SelectionMode.RECT:
+                mode = EditorMode.Rectangle;
+                break;
+            case SelectionMode.POLYLINE:
+                mode = EditorMode.Polyline;
+                break;
+            case SelectionMode.POLYGON:
+                mode = EditorMode.Polygon;
+                break;
+            case SelectionMode.POINT:
+                mode = EditorMode.Point;
+                break;
+            case SelectionMode.NONE:
+                mode = EditorMode.None;
+                break;
+            case SelectionMode.COPYRECT:
+                mode = EditorMode.CopyRect;
+                break;
+            default:
+                break;
+
+        }
+
+        return mode;
+    }
 
     private onSelectedRegionsChanged = (selectedRegions: IPictureRegion[]) => {
         this.selectedRegions = selectedRegions;

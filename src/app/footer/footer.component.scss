@@ -23,6 +23,10 @@ footer {
         display: flex;
         justify-content: flex-end;
         align-items: center;
+
+        .selection-toggle {
+            cursor: pointer;
+        }
     }
 
     .text {

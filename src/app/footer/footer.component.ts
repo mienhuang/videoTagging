@@ -6,6 +6,7 @@ import { GlobalEventBusService } from '../core/event-bus';
 import { IRegionInfo } from '../core/models/region.model';
 import { NavigationEnd, Router, RouterEvent } from '@angular/router';
 import { MatSnackBar } from '@angular/material/snack-bar';
+import { SelectionMode } from 'vott-ct/lib/js/CanvasTools/Interface/ISelectorSettings';
 
 @Component({
     selector: 'app-footer',
@@ -18,6 +19,7 @@ export class FooterComponent implements OnInit, OnDestroy {
     info: Observable<IRegionInfo>;
     public currentRoute: Observable<string>;
     public hasUntagRegion = false;
+    public currentSelectionType = SelectionMode.RECT;
 
     private readonly maxStepLenght = 16;
     private readonly minStepLenght = 1;
@@ -91,6 +93,16 @@ export class FooterComponent implements OnInit, OnDestroy {
             return;
         }
         this.event.triggerGoToFirstUntag();
+    }
+
+    changeSelectionType() {
+        if (this.currentSelectionType === SelectionMode.RECT) {
+            this.currentSelectionType = SelectionMode.POLYGON;
+        } else {
+            this.currentSelectionType = SelectionMode.RECT;
+        }
+
+        this.event.selectionModeChange(this.currentSelectionType);
     }
 
     ngOnDestroy() {

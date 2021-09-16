@@ -8,6 +8,7 @@ import { IFile, IFolder, IPictureInfo, IPictureUntagState } from './models/pictu
 import { map, tap } from 'rxjs/operators';
 import { ISavingFile } from './models/file.model';
 import shortid from 'shortid';
+import { SelectionMode } from 'vott-ct/lib/js/CanvasTools/Interface/ISelectorSettings';
 
 @Injectable({ providedIn: 'root' })
 export class GlobalEventBusService {
@@ -50,6 +51,7 @@ export class GlobalEventBusService {
     private pictureUntagState: BehaviorSubject<boolean> = new BehaviorSubject(false);
     private picturePageInstance: BehaviorSubject<string> = new BehaviorSubject('0 : 0');
     private pictureLabelSelected: BehaviorSubject<any> = new BehaviorSubject([]);
+    private pictureSelectionMode: BehaviorSubject<SelectionMode> = new BehaviorSubject(SelectionMode.RECT);
 
     resize$ = this.resize.asObservable();
     videoSelected$ = this.videoSelected.asObservable();
@@ -83,6 +85,7 @@ export class GlobalEventBusService {
     videSelectedRegionHasTagged$ = this.videSelectedRegionHasTagged.asObservable();
     videHasSelectedRegion$ = this.videHasSelectedRegion.asObservable();
     pictureLabelSelected$ = this.pictureLabelSelected.asObservable();
+    pictureSelectionMode$ = this.pictureSelectionMode.asObservable();
 
     constructor() {
         const lablesText = localStorage.getItem('labels');
@@ -91,7 +94,6 @@ export class GlobalEventBusService {
     }
 
     setPictureLabels(lables: ITag[]) {
-        console.log('set picture labels....', lables)
         this.pictureLabels.next(lables);
     }
 
@@ -294,5 +296,9 @@ export class GlobalEventBusService {
 
     setPictureLabelsFromFile(labels: Array<ITag>) {
         this.pictureLabelSelected.next(labels);
+    }
+
+    selectionModeChange(mode: SelectionMode) {
+        this.pictureSelectionMode.next(mode);
     }
 }
