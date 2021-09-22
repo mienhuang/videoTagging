@@ -23,6 +23,7 @@ import { IFile, IFolder, IPictureInfo, IPictureProject } from '../core/models/pi
 import { DomSanitizer, SafeUrl } from '@angular/platform-browser';
 
 import { IExportFileAnnotation, IExportFileCategory, IExportFileImage, IExportFileInfo } from '../core/models/file.model';
+import clone from 'clone';
 @Component({
     selector: 'app-picture-marker',
     templateUrl: './picture-marker.component.html',
@@ -158,12 +159,20 @@ export class PictureMarkerComponent implements OnInit, OnDestroy {
                                 const category_id = region.tags[0]
                                     ? categories.find((category) => category.name === region.tags[0]).id
                                     : -1;
+
+                                const cRegion: IPictureRegion = clone(region);
+                                delete cRegion.id;
+                                delete cRegion.type;
+                                delete cRegion.tags;
+
                                 annotations.push({
+                                    ...cRegion,
                                     segmentation: [],
                                     area: 0,
                                     iscrowd: 0,
                                     image_id: id,
                                     bbox: [left, top, w, h],
+                                    points: cRegion.points,
                                     category_id,
                                     id: annotationId,
                                 });

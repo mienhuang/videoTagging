@@ -1,3 +1,5 @@
+import { IPoint } from './canvas.model';
+
 export interface ISavingFile {
     path: string;
     contents: string;
@@ -26,6 +28,7 @@ export interface IExportFileAnnotation {
     bbox: number[];
     category_id: number;
     id: number;
+    points: IPoint[];
 }
 
 export interface IExportFileImage {
