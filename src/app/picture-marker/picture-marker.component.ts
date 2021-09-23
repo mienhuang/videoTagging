@@ -162,7 +162,6 @@ export class PictureMarkerComponent implements OnInit, OnDestroy {
 
                                 const cRegion: IPictureRegion = clone(region);
                                 delete cRegion.id;
-                                delete cRegion.type;
                                 delete cRegion.tags;
 
                                 annotations.push({
